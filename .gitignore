@@ -32,6 +32,11 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# local V2 reference (never commit)
+.v2ref/
+.v2ref2/
 
 # vercel
 .vercel

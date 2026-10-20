@@ -1,26 +1,148 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-reset-bg: #f5f8f6;
+  --color-reset-primary: #23845b;
+  --color-reset-dark: #193d2d;
+  --color-reset-muted: #718176;
+  --color-reset-border: #e2eae4;
+  --color-reset-soft: #e3f1e9;
+  --color-reset-danger: #b3261e;
+  --color-reset-card: #ffffff;
+  --breakpoint-tablet: 600px;
+  --breakpoint-desktop: 1024px;
+  --font-sans: var(--font-roboto), "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  min-height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-reset-bg);
+  color: var(--color-reset-dark);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+[role="button"] {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+::selection {
+  background: #c9e7d7;
+  color: #193d2d;
+}
+
+@layer components {
+  .card {
+    @apply rounded-[20px] border border-reset-border bg-reset-card;
+  }
+
+  .btn {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-[14px] px-4 text-[15px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-reset-primary/35 focus-visible:ring-offset-2 disabled:opacity-60;
+  }
+
+  .btn-primary {
+    @apply btn bg-reset-primary text-white hover:bg-[#1c714c] active:bg-[#185f41];
+  }
+
+  .btn-outline {
+    @apply btn border border-reset-border bg-white text-reset-dark hover:bg-reset-bg active:bg-[#edf3ef];
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent text-reset-primary hover:bg-reset-soft;
+  }
+
+  .btn-danger {
+    @apply btn bg-reset-danger text-white hover:bg-[#94201a];
+  }
+
+  .btn-sm {
+    @apply min-h-9 rounded-xl px-3 text-[13.5px];
+  }
+
+  .field {
+    @apply w-full rounded-[14px] border border-reset-border bg-white px-4 py-3.5 text-[15px] text-reset-dark outline-none transition placeholder:text-reset-muted focus:border-reset-primary focus:ring-[3px] focus:ring-reset-soft;
+  }
+
+  .field-label {
+    @apply mb-1.5 block text-[12.5px] font-semibold text-reset-muted;
+  }
+
+  .icon-pill {
+    @apply flex shrink-0 items-center justify-center rounded-full bg-reset-soft text-reset-primary;
+  }
+
+  .page-title {
+    @apply text-[26px] font-bold leading-tight tracking-[-0.6px] text-reset-dark tablet:text-[30px];
+  }
+
+  .muted {
+    @apply text-reset-muted;
+  }
+
+  .divider {
+    @apply h-px w-full bg-reset-border;
+  }
+}
+
+@keyframes resetFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes resetFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes resetSheetUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: resetFadeUp 0.35s ease-out both;
+}
+
+.animate-fade {
+  animation: resetFade 0.2s ease-out both;
+}
+
+.animate-sheet-up {
+  animation: resetSheetUp 0.26s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-fade,
+  .animate-sheet-up {
+    animation: none;
+  }
 }
