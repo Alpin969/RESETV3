@@ -12,7 +12,7 @@ import { friendlyError } from "@/lib/utils/errors";
 import { validateEmail } from "@/lib/utils/validators";
 
 function safeNext(value) {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+  if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//")) {
     return "/home";
   }
   return value;

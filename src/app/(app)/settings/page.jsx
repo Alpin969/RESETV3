@@ -7,6 +7,7 @@ import { useAuth } from "@/features/auth/auth-provider";
 import Avatar from "@/components/ui/avatar";
 import Skeleton from "@/components/ui/skeleton";
 import { usePwaInstall } from "@/features/settings/use-pwa-install";
+import NotificationCard from "@/features/settings/notification-card";
 import { TimezoneModal, UsernameModal } from "@/features/settings/profile-modals";
 import { updateProfile, uploadAvatar } from "@/features/settings/settings-api";
 import { timezoneLabel } from "@/lib/utils/timezones";
@@ -65,6 +66,7 @@ export default function SettingsPage() {
         <Tile icon={BellRing} title="Reminders" subtitle="Kelola pengingat" onClick={() => router.push("/reminders")} />
         <Tile icon={Download} title="Export data" subtitle="Unduh JSON atau CSV" onClick={() => router.push("/export")} />
       </div>
+      <NotificationCard push={push} />
       <div className="card mt-4 p-5">
         <h2 className="text-[16px] font-bold text-reset-dark">Install RESET</h2>
         <p className="mt-1 text-[13.5px] leading-5 text-reset-muted">{pwa.subtitle}</p>

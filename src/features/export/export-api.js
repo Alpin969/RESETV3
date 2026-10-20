@@ -4,10 +4,10 @@ export const EXPORT_TABLES = [
   "profile", "tasks", "task_checklists", "sleep_logs",
   "savings_transactions", "reminders", "notification_preferences",
 ];
-
 export function buildExportJson({ tables, username, email, generatedAt }) {
   const clean = {};
   for (const [key, rows] of Object.entries(tables)) {
+    if (key === "username" || key === "email") continue;
     clean[key] = (rows || []).map((row) => {
       const next = { ...row };
       delete next.user_id;
@@ -15,7 +15,7 @@ export function buildExportJson({ tables, username, email, generatedAt }) {
     });
   }
   return {
-    app: "RESET V3", version: 3, exported_at: generatedAt.toISOString(),
+    app: "RESET V2", version: 2, exported_at: generatedAt.toISOString(),
     account: { username: username || null, email: email || null }, tables: clean,
   };
 }
@@ -44,9 +44,13 @@ export function rowsToCsv(rows) {
   return `\uFEFF${lines.join("\r\n")}`;
 }
 
+export function csvFileNameFor(table) {
+  return `reset-v2-${table}.csv`;
+}
+
 export function exportFileName(kind, date) {
   const stamp = date.toISOString().replace(/:/g, "-").substring(0, 19);
-  return kind === "json" ? `reset-v3-export-${stamp}.json` : `reset-v3-export-${stamp}.zip`;
+  return kind === "json" ? `reset-v2-export-${stamp}.json` : `reset-v2-export-${stamp}.zip`;
 }
 
 export async function buildExportTables() {

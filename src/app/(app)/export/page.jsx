@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Download, FileJson, FileSpreadsheet } from "lucide-react";
 import PageContainer from "@/components/ui/page-container";
 import PageHeader from "@/components/ui/page-header";
-import { buildExportTables, buildExportJson, csvCell, exportFileName, rowsToCsv, EXPORT_TABLES } from "@/features/export/export-api";
+import { buildExportTables, buildExportJson, csvFileNameFor, exportFileName, rowsToCsv, EXPORT_TABLES } from "@/features/export/export-api";
 import { createZip } from "@/lib/utils/zip";
 import { useToast } from "@/components/ui/toast";
 import { friendlyError } from "@/lib/utils/errors";
@@ -51,13 +51,10 @@ export default function ExportPage() {
     try {
       const bundle = await loadTables();
       const generatedAt = new Date();
-      const nameMap = { profile: "profile", tasks: "tasks", task_checklists: "task_checklists", sleep_logs: "sleep_logs", savings_transactions: "savings_transactions", reminders: "reminders", notification_preferences: "notification_preferences" };
       const files = EXPORT_TABLES.map((table) => ({
-        name: `reset-v3-${table}.csv`,
+        name: csvFileNameFor(table),
         content: rowsToCsv(bundle[table] || []),
       }));
-      void nameMap;
-      void csvCell;
       download(createZip(files, generatedAt), exportFileName("zip", generatedAt));
       push("Export CSV (ZIP) diunduh.");
     } catch (err) { push(friendlyError(err, "Gagal mengekspor CSV."), "error"); }

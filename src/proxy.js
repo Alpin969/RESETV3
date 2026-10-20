@@ -21,7 +21,11 @@ const STATIC_PATTERN =
   /^\/(?:_next\/static|_next\/image|icons\/|favicon\.ico|manifest\.webmanifest|sw\.js)/;
 
 function needsSession(pathname) {
-  return (\n    pathname !== "/" &&\n    !PUBLIC_PAGES.has(pathname) &&\n    !pathname.startsWith("/auth/")\n  );
+  return (
+    pathname !== "/" &&
+    !PUBLIC_PAGES.has(pathname) &&
+    !pathname.startsWith("/auth/")
+  );
 }
 
 export async function proxy(request) {

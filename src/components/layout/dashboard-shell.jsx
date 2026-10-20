@@ -12,7 +12,7 @@ import {
 import { DASHBOARD_NAV } from "@/lib/constants/navigation";
 import { useAuth } from "@/features/auth/auth-provider";
 import { cn } from "@/lib/utils/cn";
-import { titleCase, truncate } from "@/lib/utils/format";
+import { truncate } from "@/lib/utils/format";
 import Avatar from "@/components/ui/avatar";
 
 const ICONS = {
@@ -25,15 +25,10 @@ const ICONS = {
 export default function DashboardShell({ children }) {
   const pathname = usePathname();
   const { profile, user } = useAuth();
-  const activeTab = pathname === "/settings" || pathname === "/export" || pathname === "/archived-tasks"
-    || pathname === "/sleep" || pathname === "/savings" || pathname === "/reminders"
-    ? null
-    : DASHBOARD_NAV.find((item) => item.href === pathname)
-      ? pathname
-      : pathname?.startsWith("/home") ? "/home" : null;
+  const activeTab = DASHBOARD_NAV.find((item) => item.href === pathname)?.href
+    || (pathname?.startsWith("/home") ? "/home" : null);
 
   const username = profile?.username || user?.email?.split("@")[0] || "Friend";
-  const displayName = titleCase(username);
   const email = user?.email || "";
 
   return (
