@@ -1,6 +1,8 @@
 import { formatDateParam, localToday } from "@/lib/utils/date";
-import { parseChecklist, parseStreak, parseTask, TASK_COLUMNS } from "./tasks-api";
+import { createTask, fetchActiveTasks, fetchArchivedTasks, parseChecklist, parseStreak, parseTask, TASK_COLUMNS } from "./tasks-api";
 import { createClient } from "@/lib/supabase/client";
+
+export { createTask, fetchActiveTasks, fetchArchivedTasks };
 
 export async function updateTask({ id, title, notes }) {
   const supabase = createClient();

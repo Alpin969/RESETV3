@@ -21,6 +21,7 @@ export default function NotificationCard({ push }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [quietOpen, setQuietOpen] = useState(false);
+  const [testLoading, setTestLoading] = useState(false);
 
   const { isSupported, isSubscribed, loading: pushLoading, error: pushError, subscribe, unsubscribe } = usePushSubscription();
 
@@ -61,6 +62,28 @@ export default function NotificationCard({ push }) {
       } else {
         push(result.error || "Gagal mengaktifkan push notification.", "error");
       }
+    }
+  }
+
+  async function handleTestNotification() {
+    setTestLoading(true);
+    try {
+      const res = await fetch("/api/push-notification/test", {
+        method: "POST",
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Gagal mengirim notifikasi uji.");
+      }
+
+      const data = await res.json();
+      push(data.message || "Notifikasi uji berhasil dikirim.", "success");
+    } catch (err) {
+      console.error("Test notification error:", err);
+      push(err.message || "Gagal mengirim notifikasi uji.", "error");
+    } finally {
+      setTestLoading(false);
     }
   }
 
@@ -106,6 +129,26 @@ export default function NotificationCard({ push }) {
           {pushError && (
             <div className="py-3 px-4 bg-[#FDECEA] rounded-lg text-[12.5px] text-reset-danger border border-reset-danger/40">
               {pushError}
+            </div>
+          )}
+          {isSubscribed && (
+            <div className="flex items-center gap-3 py-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-[14px] font-bold text-reset-dark">Kirim Notifikasi Uji</p>
+                <p className="text-[12.5px] text-reset-muted">Coba kirim notifikasi push ke perangkat Anda.</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleTestNotification}
+                disabled={testLoading}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-reset-primary text-white text-[13px] font-semibold hover:bg-reset-primary-hover transition-colors disabled:opacity-60"
+              >
+                {testLoading ? (
+                  <span className="animate-spin h-4 w-4 border-2 border-current rounded-full border-t-transparent" />
+                ) : (
+                  "Kirim"
+                )}
+              </button>
             </div>
           )}
           {ROWS.map((row) => (

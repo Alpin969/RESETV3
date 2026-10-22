@@ -1,8 +1,21 @@
 import { createClient } from "@/lib/supabase/server";
 
+const rateLimitMap = new Map();
+const RATE_LIMIT_MS = 10000;
+
+function checkRateLimit(key) {
+  const now = Date.now();
+  const last = rateLimitMap.get(key);
+  if (last && now - last < RATE_LIMIT_MS) {
+    return false;
+  }
+  rateLimitMap.set(key, now);
+  return true;
+}
+
 export async function POST(request) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -14,12 +27,43 @@ export async function POST(request) {
       });
     }
 
+    const rateLimitKey = `push-subscribe:${user.id}`;
+    if (!checkRateLimit(rateLimitKey)) {
+      return new Response(
+        JSON.stringify({ error: "Terlalu banyak request. Coba lagi sebentar." }),
+        {
+          status: 429,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
     const body = await request.json();
     const { endpoint, p256dh, auth_key } = body;
 
-    if (!endpoint || !p256dh || !auth_key) {
+    if (!endpoint || typeof endpoint !== "string" || endpoint.length < 5) {
       return new Response(
-        JSON.stringify({ error: "Missing subscription fields" }),
+        JSON.stringify({ error: "Endpoint tidak valid" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    if (!p256dh || typeof p256dh !== "string") {
+      return new Response(
+        JSON.stringify({ error: "p256dh tidak valid" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    if (!auth_key || typeof auth_key !== "string") {
+      return new Response(
+        JSON.stringify({ error: "auth_key tidak valid" }),
         {
           status: 400,
           headers: { "Content-Type": "application/json" },
@@ -59,7 +103,7 @@ export async function POST(request) {
 
 export async function DELETE(request) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -69,6 +113,17 @@ export async function DELETE(request) {
         status: 401,
         headers: { "Content-Type": "application/json" },
       });
+    }
+
+    const rateLimitKey = `push-unsubscribe:${user.id}`;
+    if (!checkRateLimit(rateLimitKey)) {
+      return new Response(
+        JSON.stringify({ error: "Terlalu banyak request. Coba lagi sebentar." }),
+        {
+          status: 429,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
     const { error } = await supabase

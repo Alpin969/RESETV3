@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const VAPID_PUBLIC_KEY =
   process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
@@ -12,11 +12,25 @@ function urlBase64ToUint8Array(base64String) {
   return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
 }
 
+const rateLimitMap = new Map();
+const RATE_LIMIT_MS = 10000;
+
+function checkRateLimit(key) {
+  const now = Date.now();
+  const last = rateLimitMap.get(key);
+  if (last && now - last < RATE_LIMIT_MS) {
+    return false;
+  }
+  rateLimitMap.set(key, now);
+  return true;
+}
+
 export function usePushSubscription() {
   const [isSupported, setIsSupported] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const subscribingRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -31,29 +45,71 @@ export function usePushSubscription() {
       return { ok: false };
     }
 
+    if (!checkRateLimit("push-subscribe")) {
+      setError("Terlalu banyak request. Coba lagi sebentar.");
+      return { ok: false };
+    }
+
+    if (subscribingRef.current) return { ok: false };
+    subscribingRef.current = true;
+
     setLoading(true);
     setError(null);
 
+    let newSubscription = null;
+    let oldSubscription = null;
+
     try {
       const registration = await navigator.serviceWorker.ready;
-      const existing = await registration.pushManager.getSubscription();
+      oldSubscription = await registration.pushManager.getSubscription();
 
-      if (existing) {
-        await existing.unsubscribe();
+      if (oldSubscription) {
+        const existingKey = oldSubscription.options?.applicationServerKey;
+        if (existingKey) {
+          const existingKeyStr = btoa(
+            String.fromCharCode(...new Uint8Array(existingKey))
+          );
+          if (existingKeyStr === VAPID_PUBLIC_KEY) {
+            const payload = {
+              endpoint: oldSubscription.endpoint,
+              p256dh: btoa(
+                String.fromCharCode(
+                  ...new Uint8Array(oldSubscription.getKey("p256dh"))
+                )
+              ),
+              auth_key: btoa(
+                String.fromCharCode(
+                  ...new Uint8Array(oldSubscription.getKey("auth"))
+                )
+              ),
+            };
+
+            const res = await fetch("/api/push-subscription", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+
+            if (res.ok) {
+              setIsSubscribed(true);
+              return { ok: true, subscription: oldSubscription };
+            }
+          }
+        }
       }
 
-      const subscription = await registration.pushManager.subscribe({
+      newSubscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
 
       const payload = {
-        endpoint: subscription.endpoint,
+        endpoint: newSubscription.endpoint,
         p256dh: btoa(
-          String.fromCharCode(...new Uint8Array(subscription.getKey("p256dh")))
+          String.fromCharCode(...new Uint8Array(newSubscription.getKey("p256dh")))
         ),
         auth_key: btoa(
-          String.fromCharCode(...new Uint8Array(subscription.getKey("auth")))
+          String.fromCharCode(...new Uint8Array(newSubscription.getKey("auth")))
         ),
       };
 
@@ -65,13 +121,23 @@ export function usePushSubscription() {
 
       if (!res.ok) throw new Error("Gagal menyimpan subscription ke server.");
 
+      if (oldSubscription && oldSubscription !== newSubscription) {
+        await oldSubscription.unsubscribe().catch(() => undefined);
+      }
+
       setIsSubscribed(true);
-      return { ok: true, subscription };
+      return { ok: true, subscription: newSubscription };
     } catch (err) {
       console.error("Push subscribe error:", err);
       setError(err.message);
+
+      if (newSubscription) {
+        await newSubscription.unsubscribe().catch(() => undefined);
+      }
+
       return { ok: false, error: err.message };
     } finally {
+      subscribingRef.current = false;
       setLoading(false);
     }
   }, [isSupported, VAPID_PUBLIC_KEY]);
@@ -107,7 +173,6 @@ export function usePushSubscription() {
     }
   }, [isSupported]);
 
-  // Check existing subscription on mount
   useEffect(() => {
     if (!isSupported) return;
     let mounted = true;
