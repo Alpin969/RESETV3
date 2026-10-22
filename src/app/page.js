@@ -10,5 +10,5 @@ export default async function RootPage() {
   } catch {
     user = null;
   }
-  redirect(user ? "/home" : "/welcome");
+  redirect(user ? "/home" : "/login");
 }

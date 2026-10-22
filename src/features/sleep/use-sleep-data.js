@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { firstDayOfMonth, localToday } from "@/lib/utils/date";
 import { deleteSleepLog, fetchSleepLogs, fetchSleepSummary } from "@/features/sleep/sleep-api";
 import { useDataRevision } from "@/lib/data-revision";
@@ -12,6 +12,9 @@ export function useSleepData(month) {
   const [error, setError] = useState(null);
   const [busyIds, setBusyIds] = useState(new Set());
   const { revisions, bump } = useDataRevision();
+
+  const monthYear = useMemo(() => month.getFullYear(), [month]);
+  const monthIndex = useMemo(() => month.getMonth(), [month]);
 
   const load = useCallback(async () => {
     try {
@@ -29,9 +32,12 @@ export function useSleepData(month) {
       setStatus((s) => (logs.length === 0 ? "failure" : s));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [month.getFullYear(), month.getMonth(), revisions.sleep]);
+  }, [monthYear, monthIndex, revisions.sleep]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load();
+  }, [load]);
 
   const remove = useCallback(async (id) => {
     setBusyIds((cur) => new Set(cur).add(id));

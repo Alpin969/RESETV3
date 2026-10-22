@@ -1,28 +1,59 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { BedDouble, PiggyBank, TrendingUp, BellPlus } from "lucide-react";
+import { BedDouble, BellPlus, ChevronRight, PiggyBank, Plus } from "lucide-react";
 
-const ACTIONS = [
-  { icon: BedDouble, label: "Sleep", href: "/sleep" },
-  { icon: PiggyBank, label: "Savings", href: "/savings" },
-  { icon: TrendingUp, label: "View Progress", href: "/progress" },
-  { icon: BellPlus, label: "Add Reminder", href: "/reminders" },
-];
-
-export default function QuickActions({ compact }) {
+export default function QuickActions({ onAddTask }) {
   const router = useRouter();
+
+  const actions = [
+    {
+      icon: Plus,
+      label: "Add New Task",
+      description: "Create a new task for today",
+      onClick: onAddTask,
+    },
+    {
+      icon: BedDouble,
+      label: "Log Sleep",
+      description: "Record your sleep data",
+      onClick: () => router.push("/sleep"),
+    },
+    {
+      icon: PiggyBank,
+      label: "Add Savings",
+      description: "Track your financial goals",
+      onClick: () => router.push("/savings"),
+    },
+    {
+      icon: BellPlus,
+      label: "Set Reminder",
+      description: "Don't forget important things",
+      onClick: () => router.push("/reminders"),
+    },
+  ];
+
   return (
-    <section>
-      <h2 className="text-[17px] font-bold text-reset-dark">Quick Actions</h2>
-      <div className={`mt-3 grid gap-3 ${compact ? "grid-cols-2" : "grid-cols-2 tablet:grid-cols-4"}`}>
-        {ACTIONS.map(({ icon: Icon, label, href }) => (
-          <button key={label} type="button" onClick={() => router.push(href)}
-            className="flex items-center gap-2.5 rounded-2xl border border-reset-border bg-white px-3.5 py-3.5 text-left transition hover:border-reset-primary/40 hover:bg-[#FAFCFA] active:scale-[0.98]">
-            <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-reset-soft text-reset-primary">
-              <Icon size={18} />
+    <section className="card flex h-full flex-col p-4 desktop:p-5">
+      <div className="mb-1.5 flex items-center justify-between">
+        <h2 className="heading-3">Quick Actions</h2>
+      </div>
+      <div className="flex flex-1 flex-col justify-center divide-y divide-[#eef3ef]">
+        {actions.map(({ icon: Icon, label, description, onClick }) => (
+          <button
+            key={label}
+            type="button"
+            onClick={onClick}
+            className="group flex w-full items-center gap-3 py-2.5 text-left transition"
+          >
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] border border-[#e5eee7] bg-[#f5faf6] text-reset-primary transition group-hover:border-[#cfe2d5] group-hover:bg-reset-soft">
+              <Icon size={15} strokeWidth={1.9} />
             </span>
-            <span className="min-w-0 flex-1 text-[13.5px] font-semibold leading-4 text-reset-dark">{label}</span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[12px] font-semibold text-reset-dark">{label}</span>
+              <span className="block truncate text-[10.5px] text-reset-muted">{description}</span>
+            </span>
+            <ChevronRight size={15} className="shrink-0 text-[#b8c5bb] transition group-hover:translate-x-0.5 group-hover:text-reset-primary" />
           </button>
         ))}
       </div>

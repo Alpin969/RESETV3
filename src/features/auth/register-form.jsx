@@ -3,22 +3,19 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Mail, User } from "lucide-react";
 import AuthShell from "./auth-shell";
 import AuthMessage from "./auth-message";
-import PasswordField from "./password-field";
 import AuthSubmitButton from "./auth-submit-button";
+import { AuthDivider, AuthInput, AuthPasswordInput, GoogleButton } from "./auth-fields";
 import { createClient } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/utils/errors";
-import {
-  validateConfirmPassword,
-  validateEmail,
-  validatePassword,
-  validateUsername,
-} from "@/lib/utils/validators";
+import { validateEmail, validatePassword, validateConfirmPassword, validateUsername } from "@/lib/utils/validators";
 import { deviceTimezone } from "@/lib/utils/timezones";
 
 export default function RegisterForm() {
   const router = useRouter();
+
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,17 +23,17 @@ export default function RegisterForm() {
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   function validate() {
     const nextErrors = {};
     const usernameError = validateUsername(username);
-    const emailError = validateEmail(email);
-    const passwordError = validatePassword(password);
-    const confirmError = validateConfirmPassword(confirmPassword, password);
     if (usernameError) nextErrors.username = usernameError;
+    const emailError = validateEmail(email);
     if (emailError) nextErrors.email = emailError;
+    const passwordError = validatePassword(password);
     if (passwordError) nextErrors.password = passwordError;
+    const confirmError = validateConfirmPassword(confirmPassword, password);
     if (confirmError) nextErrors.confirmPassword = confirmError;
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -53,11 +50,11 @@ export default function RegisterForm() {
     try {
       const supabase = createClient();
       const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
+        email: String(email || "").trim(),
         password,
         options: {
           data: {
-            username: username.trim(),
+            username: String(username || "").trim(),
             timezone: deviceTimezone(),
           },
         },
@@ -66,9 +63,11 @@ export default function RegisterForm() {
         throw error;
       }
       if (!data.user || !data.session) {
-        setNeedsConfirmation(true);
-        setSubmitting(false);
-        return;
+        const confirmation = new Error(
+          "Account created, but the login session isn't active yet. Please sign in on the Login page."
+        );
+        confirmation.code = "confirmation_required";
+        throw confirmation;
       }
       router.replace("/home");
       router.refresh();
@@ -78,33 +77,35 @@ export default function RegisterForm() {
     }
   }
 
-  if (needsConfirmation) {
-    return (
-      <AuthShell
-        title="Akun dibuat"
-        subtitle="Satu langkah lagi sebelum kamu mulai."
-        backHref="/login"
-      >
-        <AuthMessage
-          type="success"
-          message="Akun berhasil dibuat, tetapi sesi login belum aktif. Periksa emailmu untuk konfirmasi, lalu masuk lewat halaman Login."
-        />
-        <Link href="/login" className="btn-primary w-full">
-          Ke halaman Login
-        </Link>
-      </AuthShell>
-    );
+  async function handleGoogle() {
+    setMessage(null);
+    setGoogleLoading(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/home")}`,
+        },
+      });
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      setMessage(friendlyError(error));
+      setGoogleLoading(false);
+    }
   }
 
   return (
     <AuthShell
-      title="Buat akun RESET"
-      subtitle="Isi data di bawah untuk mulai membangun kebiasaan baik."
-      backHref="/welcome"
+      title="Create your account"
+      subtitle="Start your journey to a better you"
+      panelVariant="register"
       footer={
         <span>
-          Sudah punya akun?{" "}
-          <Link href="/login" className="font-semibold text-reset-primary">
+          Already have an account?{" "}
+          <Link href="/login" className="font-bold text-reset-primary hover:underline">
             Login
           </Link>
         </span>
@@ -112,85 +113,69 @@ export default function RegisterForm() {
     >
       <AuthMessage message={message} />
 
-      <form onSubmit={handleSubmit} noValidate className="space-y-4">
-        <div>
-          <label htmlFor="register-username" className="field-label">
-            Username
-          </label>
-          <input
-            id="register-username"
-            type="text"
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-            placeholder="mis. alvin_25"
-            autoComplete="username"
-            disabled={submitting}
-            aria-invalid={errors.username ? "true" : undefined}
-            className="field"
-          />
-          {errors.username ? (
-            <p className="mt-1.5 text-[12px] text-reset-danger">
-              {errors.username}
-            </p>
-          ) : null}
-        </div>
+      <form onSubmit={handleSubmit} noValidate className="space-y-3.5">
+        <AuthInput
+          id="register-username"
+          label="Username"
+          type="text"
+          icon={User}
+          value={username}
+          onChange={(event) => setUsername(event.target.value)}
+          placeholder="Username"
+          autoComplete="username"
+          inputMode="text"
+          disabled={submitting || googleLoading}
+          error={errors.username}
+          maxLength={30}
+        />
 
-        <div>
-          <label htmlFor="register-email" className="field-label">
-            Email
-          </label>
-          <input
-            id="register-email"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="nama@email.com"
-            autoComplete="email"
-            inputMode="email"
-            disabled={submitting}
-            aria-invalid={errors.email ? "true" : undefined}
-            className="field"
-          />
-          {errors.email ? (
-            <p className="mt-1.5 text-[12px] text-reset-danger">
-              {errors.email}
-            </p>
-          ) : null}
-        </div>
+        <AuthInput
+          id="register-email"
+          label="Email address"
+          type="email"
+          icon={Mail}
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="Email address"
+          autoComplete="email"
+          inputMode="email"
+          disabled={submitting || googleLoading}
+          error={errors.email}
+        />
 
-        <PasswordField
+        <AuthPasswordInput
           id="register-password"
           label="Password"
           value={password}
-          onChange={setPassword}
-          error={errors.password}
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="Password"
           autoComplete="new-password"
-          placeholder="Minimal 8 karakter"
-          disabled={submitting}
+          disabled={submitting || googleLoading}
+          error={errors.password}
         />
 
-        <PasswordField
+        <AuthPasswordInput
           id="register-confirm"
-          label="Konfirmasi Password"
+          label="Confirm password"
           value={confirmPassword}
-          onChange={setConfirmPassword}
-          error={errors.confirmPassword}
+          onChange={(event) => setConfirmPassword(event.target.value)}
+          placeholder="Confirm password"
           autoComplete="new-password"
-          placeholder="Ulangi password"
-          disabled={submitting}
+          disabled={submitting || googleLoading}
+          error={errors.confirmPassword}
         />
 
         <AuthSubmitButton
           label="Register"
-          loadingLabel="Membuat akun..."
+          loadingLabel="Creating account..."
           loading={submitting}
+          disabled={googleLoading}
         />
-      </form>
 
-      <p className="mt-4 text-center text-[11.5px] leading-5 text-reset-muted">
-        Dengan mendaftar, kamu setuju menggunakan RESET untuk membangun
-        kebiasaan baik secara konsisten.
-      </p>
+        <AuthDivider />
+
+        <GoogleButton onClick={handleGoogle} loading={googleLoading} disabled={submitting} />
+      </form>
     </AuthShell>
   );
 }

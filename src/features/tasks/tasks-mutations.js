@@ -35,7 +35,7 @@ export async function deleteTask({ id }) {
 export async function fetchChecklists({ from, to }) {
   const supabase = createClient();
   const { data, error } = await supabase.from("daily_task_checklists")
-    .select("task_id, task_date, is_completed")
+    .select("task_id, task_date, is_completed, completed_at")
     .gte("task_date", formatDateParam(from)).lte("task_date", formatDateParam(to));
   if (error) throw error;
   return (data || []).map((row) => parseChecklist(row, from));

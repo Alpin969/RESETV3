@@ -2,21 +2,26 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+function detectIos() {
+  if (typeof window === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  return /iphone|ipad|ipod/i.test(ua) && !window.MSStream;
+}
+
+function detectInstalled() {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+  } catch { return false; }
+}
+
 export function usePwaInstall() {
   const [deferred, setDeferred] = useState(null);
-  const [installed, setInstalled] = useState(false);
-  const [isIos, setIsIos] = useState(false);
+  const [installed, setInstalled] = useState(detectInstalled());
+  const [isIos] = useState(detectIos());
   const [working, setWorking] = useState(false);
 
   useEffect(() => {
-    try {
-      const ua = navigator.userAgent || "";
-      setIsIos(/iphone|ipad|ipod/i.test(ua) && !window.MSStream);
-      if (window.matchMedia("(display-mode: standalone)").matches || navigator.standalone) {
-        setInstalled(true);
-      }
-    } catch { /* abaikan */ }
-
     function onBeforeInstall(e) {
       e.preventDefault();
       setDeferred(e);

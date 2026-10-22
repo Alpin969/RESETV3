@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchActiveTasks, fetchArchivedTasks } from "@/features/tasks/tasks-api";
 import { fetchChecklists } from "@/features/tasks/tasks-mutations";
 import { firstDayOfMonth, formatDateParam, localToday } from "@/lib/utils/date";
@@ -13,6 +13,9 @@ export function useHistoryData(month) {
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState(null);
   const { revisions } = useDataRevision();
+
+  const monthYear = useMemo(() => month.getFullYear(), [month]);
+  const monthIndex = useMemo(() => month.getMonth(), [month]);
 
   const load = useCallback(async () => {
     try {
@@ -37,9 +40,12 @@ export function useHistoryData(month) {
       setStatus((s) => (tasks.length === 0 ? "failure" : s));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [month.getFullYear(), month.getMonth(), revisions.tasks]);
+  }, [monthYear, monthIndex, revisions.tasks]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load();
+  }, [load]);
 
   return { today, tasks, completedByDate, status, error, reload: load };
 }

@@ -1,15 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Mail } from "lucide-react";
 import AuthShell from "./auth-shell";
 import AuthMessage from "./auth-message";
-import PasswordField from "./password-field";
 import AuthSubmitButton from "./auth-submit-button";
+import { AuthDivider, AuthInput, AuthPasswordInput, GoogleButton } from "./auth-fields";
 import { createClient } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/utils/errors";
 import { validateEmail } from "@/lib/utils/validators";
+
+const REMEMBER_KEY = "reset:remembered-email";
 
 function safeNext(value) {
   if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//")) {
@@ -27,16 +30,33 @@ export default function LoginForm() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(false);
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState(
     authError
       ? friendlyError(
           { message: authError },
-          "Link tidak dapat digunakan. Silakan minta link baru."
+          "This link can't be used. Please request a new one."
         )
       : null
   );
   const [submitting, setSubmitting] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      try {
+        const saved = window.localStorage.getItem(REMEMBER_KEY);
+        if (saved) {
+          setEmail(saved);
+          setRemember(true);
+        }
+      } catch {
+        // ignore unavailable storage
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   function validate() {
     const nextErrors = {};
@@ -45,7 +65,7 @@ export default function LoginForm() {
       nextErrors.email = emailError;
     }
     if (!password) {
-      nextErrors.password = "Password wajib diisi.";
+      nextErrors.password = "Password is required.";
     }
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -68,6 +88,12 @@ export default function LoginForm() {
       if (error) {
         throw error;
       }
+      try {
+        if (remember) window.localStorage.setItem(REMEMBER_KEY, email.trim());
+        else window.localStorage.removeItem(REMEMBER_KEY);
+      } catch {
+        // ignore unavailable storage
+      }
       router.replace(next);
       router.refresh();
     } catch (error) {
@@ -76,15 +102,35 @@ export default function LoginForm() {
     }
   }
 
+  async function handleGoogle() {
+    setMessage(null);
+    setGoogleLoading(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        },
+      });
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      setMessage(friendlyError(error));
+      setGoogleLoading(false);
+    }
+  }
+
   return (
     <AuthShell
-      title="Masuk ke RESET"
-      subtitle="Lanjutkan kebiasaan baikmu hari ini."
-      backHref="/welcome"
+      title="Welcome back!"
+      subtitle="Login to your account to continue"
+      panelVariant="login"
       footer={
         <span>
-          Belum punya akun?{" "}
-          <Link href="/register" className="font-semibold text-reset-primary">
+          Don&apos;t have an account?{" "}
+          <Link href="/register" className="font-bold text-reset-primary hover:underline">
             Register
           </Link>
         </span>
@@ -93,59 +139,65 @@ export default function LoginForm() {
       {justReset ? (
         <AuthMessage
           type="success"
-          message="Password berhasil diubah. Silakan login kembali."
+          message="Password successfully changed. Please sign in again."
         />
       ) : null}
       <AuthMessage message={message} />
 
-      <form onSubmit={handleSubmit} noValidate className="space-y-4">
-        <div>
-          <label htmlFor="login-email" className="field-label">
-            Email
-          </label>
-          <input
-            id="login-email"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="nama@email.com"
-            autoComplete="email"
-            inputMode="email"
-            disabled={submitting}
-            aria-invalid={errors.email ? "true" : undefined}
-            className="field"
-          />
-          {errors.email ? (
-            <p className="mt-1.5 text-[12px] text-reset-danger">
-              {errors.email}
-            </p>
-          ) : null}
-        </div>
+      <form onSubmit={handleSubmit} noValidate className="space-y-3.5">
+        <AuthInput
+          id="login-email"
+          label="Email address"
+          type="email"
+          icon={Mail}
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="Email address"
+          autoComplete="email"
+          inputMode="email"
+          disabled={submitting || googleLoading}
+          error={errors.email}
+        />
 
-        <PasswordField
+        <AuthPasswordInput
           id="login-password"
           label="Password"
           value={password}
-          onChange={setPassword}
-          error={errors.password}
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="Password"
           autoComplete="current-password"
-          disabled={submitting}
+          disabled={submitting || googleLoading}
+          error={errors.password}
         />
 
-        <div className="-mt-1 flex justify-end">
+        <div className="flex items-center justify-between pt-0.5">
+          <label className="flex cursor-pointer select-none items-center gap-2">
+            <input
+              type="checkbox"
+              checked={remember}
+              onChange={(event) => setRemember(event.target.checked)}
+              className="h-[15px] w-[15px] cursor-pointer rounded-[4px] border-[#cbd9cf] accent-[#2f8a60]"
+            />
+            <span className="text-[12.5px] font-medium text-[#6f8376]">Remember me</span>
+          </label>
           <Link
             href="/forgot-password"
             className="text-[12.5px] font-semibold text-reset-primary hover:underline"
           >
-            Forgot Password?
+            Forgot password?
           </Link>
         </div>
 
         <AuthSubmitButton
           label="Login"
-          loadingLabel="Masuk..."
+          loadingLabel="Signing in..."
           loading={submitting}
+          disabled={googleLoading}
         />
+
+        <AuthDivider />
+
+        <GoogleButton onClick={handleGoogle} loading={googleLoading} disabled={submitting} />
       </form>
     </AuthShell>
   );

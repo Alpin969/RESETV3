@@ -1,11 +1,13 @@
-import { Roboto } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import ServiceWorkerRegister from "@/components/pwa/service-worker-register";
+import AppProviders from "@/components/providers";
+import SplashScreen from "@/components/ui/splash-screen";
 
-const roboto = Roboto({
-  variable: "--font-roboto",
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
   subsets: ["latin"],
-  weight: ["400", "500", "700", "900"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 
@@ -16,7 +18,7 @@ export const metadata = {
     template: "%s | RESET",
   },
   description:
-    "RESET - habit tracker dan personal productivity. Bangun kebiasaan baik, mulai dari hari ini.",
+    "RESET - habit tracker and personal productivity. Build better habits, starting today.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
@@ -45,15 +47,18 @@ export const viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#23845B",
+  themeColor: "#2f8a60",
   colorScheme: "light",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="id" className={`${roboto.variable} h-full`}>
+    <html lang="en" className={`${jakarta.variable} h-full`}>
       <body className="min-h-full bg-reset-bg text-reset-dark antialiased">
-        {children}
+        <AppProviders>
+          <SplashScreen />
+          {children}
+        </AppProviders>
         <ServiceWorkerRegister />
       </body>
     </html>

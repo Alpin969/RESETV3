@@ -40,7 +40,10 @@ export function useProgressData() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [revisions.tasks, revisions.sleep, revisions.savings]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load();
+  }, [load]);
 
   const weekly = monthly.filter((p) => {
     const from = addDays(today, -6);

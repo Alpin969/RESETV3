@@ -8,7 +8,7 @@ import { reminderDaysLabel } from "@/features/reminders/reminders-api";
 export default function ReminderTile({ reminder, onToggle, onEdit, onDelete }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="card flex items-center gap-3 p-4">
+    <div className="card flex items-center justify-between gap-2 p-4">
       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-reset-soft text-reset-primary">
         <BellRing size={19} />
       </span>

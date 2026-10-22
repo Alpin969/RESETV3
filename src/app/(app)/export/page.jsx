@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, FileJson, FileSpreadsheet } from "lucide-react";
+import { Download, FileJson, FileSpreadsheet, ChevronRight } from "lucide-react";
 import PageContainer from "@/components/ui/page-container";
 import PageHeader from "@/components/ui/page-header";
 import { buildExportTables, buildExportJson, csvFileNameFor, exportFileName, rowsToCsv, EXPORT_TABLES } from "@/features/export/export-api";
@@ -41,8 +41,8 @@ export default function ExportPage() {
       const generatedAt = new Date();
       const json = buildExportJson({ tables: bundle, username: bundle.username, email: bundle.email, generatedAt });
       download(new Blob([JSON.stringify(json, null, 2)], { type: "application/json" }), exportFileName("json", generatedAt));
-      push("Export JSON diunduh.");
-    } catch (err) { push(friendlyError(err, "Gagal mengekspor JSON."), "error"); }
+      push("JSON export downloaded.");
+    } catch (err) { push(friendlyError(err, "Failed to export JSON."), "error"); }
     finally { setWorking(null); }
   }
 
@@ -56,52 +56,59 @@ export default function ExportPage() {
         content: rowsToCsv(bundle[table] || []),
       }));
       download(createZip(files, generatedAt), exportFileName("zip", generatedAt));
-      push("Export CSV (ZIP) diunduh.");
-    } catch (err) { push(friendlyError(err, "Gagal mengekspor CSV."), "error"); }
+      push("CSV (ZIP) export downloaded.");
+    } catch (err) { push(friendlyError(err, "Failed to export CSV."), "error"); }
     finally { setWorking(null); }
   }
 
   return (
     <PageContainer className="max-w-3xl">
-      <PageHeader title="Export Data" subtitle="Unduh seluruh data akunmu dalam format JSON atau CSV." />
-      <div className="card p-5 tablet:p-6">
+      <PageHeader title="Export Data" subtitle="Download all your account data in JSON or CSV format." />
+
+      <div className="card p-5 mb-4">
         <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-reset-soft text-reset-primary"><FileJson size={20} /></span>
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-reset-primary-light text-reset-primary">
+            <FileJson size={22} />
+          </span>
           <div className="flex-1">
-            <h2 className="text-[16px] font-bold text-reset-dark">Export JSON</h2>
-            <p className="text-[13px] text-reset-muted">Satu file berisi seluruh data akun.</p>
+            <h2 className="heading-3">Export JSON</h2>
+            <p className="body-sm text-reset-muted">Single file containing all account data.</p>
           </div>
         </div>
         <button type="button" onClick={handleJson} disabled={!!working} className="btn-primary mt-4 w-full">
-          <Download size={17} /> {working === "json" ? "Menyiapkan..." : "Unduh JSON"}
+          <Download size={18} /> {working === "json" ? "Preparing..." : "Download JSON"}
         </button>
       </div>
-      <div className="card mt-4 p-5 tablet:p-6">
+
+      <div className="card p-5 mb-4">
         <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-reset-soft text-reset-primary"><FileSpreadsheet size={20} /></span>
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-reset-primary-light text-reset-primary">
+            <FileSpreadsheet size={22} />
+          </span>
           <div className="flex-1">
-            <h2 className="text-[16px] font-bold text-reset-dark">Export CSV (ZIP)</h2>
-            <p className="text-[13px] text-reset-muted">Satu file ZIP berisi CSV per dataset.</p>
+            <h2 className="heading-3">Export CSV (ZIP)</h2>
+            <p className="body-sm text-reset-muted">ZIP file containing separate CSV files per dataset.</p>
           </div>
         </div>
         <button type="button" onClick={handleCsv} disabled={!!working} className="btn-outline mt-4 w-full">
-          <Download size={17} /> {working === "csv" ? "Menyiapkan..." : "Unduh ZIP"}
+          <Download size={18} /> {working === "csv" ? "Preparing..." : "Download ZIP"}
         </button>
       </div>
-      {summary ? (
-        <div className="card mt-4 p-5">
-          <h2 className="text-[15px] font-bold text-reset-dark">Ringkasan terakhir</h2>
-          <p className="mt-1 text-[13px] text-reset-muted">{summary.username || ""} {summary.email ? `• ${summary.email}` : ""}</p>
-          <ul className="mt-3 space-y-1.5">
+
+      {summary && (
+        <div className="card p-5">
+          <h2 className="heading-3">Last Export Summary</h2>
+          <p className="mt-1 body-sm text-reset-muted">{summary.username || ""} {summary.email ? `• ${summary.email}` : ""}</p>
+          <ul className="mt-4 space-y-2">
             {EXPORT_TABLES.map((t) => (
-              <li key={t} className="flex justify-between text-[13.5px]">
-                <span className="text-reset-muted">{t}</span>
-                <span className="font-bold text-reset-dark">{summary.counts[t] ?? 0} baris</span>
+              <li key={t} className="flex items-center justify-between py-2 px-3 rounded-xl bg-reset-bg">
+                <span className="body-sm text-reset-muted">{t}</span>
+                <span className="body-sm font-semibold text-reset-dark">{summary.counts[t] ?? 0} rows</span>
               </li>
             ))}
           </ul>
         </div>
-      ) : null}
+      )}
     </PageContainer>
   );
 }

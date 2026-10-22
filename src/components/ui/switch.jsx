@@ -16,15 +16,21 @@ export default function ToggleSwitch({
       aria-label={label}
       disabled={disabled}
       onClick={() => onChange?.(!checked)}
+      onKeyDown={(e) => {
+        if (e.key === " " || e.key === "Enter") {
+          e.preventDefault();
+          onChange?.(!checked);
+        }
+      }}
       className={cn(
-        "relative h-6 w-11 shrink-0 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-reset-primary/40 focus-visible:ring-offset-2 disabled:opacity-50",
-        checked ? "bg-reset-primary" : "bg-[#CFD9D2]"
+        "relative h-6 w-11 shrink-0 rounded-full overflow-hidden transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-reset-primary/40 focus-visible:ring-offset-2 disabled:opacity-50",
+        checked ? "bg-[#23845B]" : "bg-[#CFD9D2]"
       )}
     >
       <span
         className={cn(
-          "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
-          checked ? "translate-x-[22px]" : "translate-x-0.5"
+          "absolute top-[3px] left-[3px] h-[18px] w-[18px] rounded-full bg-white shadow-sm transition-all duration-150",
+          checked ? "left-[23px]" : "left-[3px]"
         )}
       />
     </button>

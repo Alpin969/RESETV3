@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Archive } from "lucide-react";
+import { Archive, ChevronRight, RotateCcw, Trash2 } from "lucide-react";
 import PageContainer from "@/components/ui/page-container";
 import PageHeader from "@/components/ui/page-header";
 import Skeleton from "@/components/ui/skeleton";
@@ -30,12 +30,15 @@ export default function ArchivedTasksPage() {
       setError(null);
       setStatus("ready");
     } catch (err) {
-      setError(err?.message || "Gagal memuat arsip.");
+      setError(err?.message || "Failed to load archive.");
       setStatus("failure");
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+    load();
+  }, [load]);
 
   async function handleRestore(task) {
     setRestoring((cur) => new Set(cur).add(task.id));
@@ -43,8 +46,8 @@ export default function ArchivedTasksPage() {
       await restoreTask({ id: task.id });
       setTasks((cur) => cur.filter((t) => t.id !== task.id));
       bump("tasks");
-      push("Task dipulihkan.");
-    } catch (err) { push(friendlyError(err, "Gagal memulihkan task."), "error"); }
+      push("Task restored.");
+    } catch (err) { push(friendlyError(err, "Failed to restore task."), "error"); }
     finally { setRestoring((cur) => { const n = new Set(cur); n.delete(task.id); return n; }); }
   }
 
@@ -54,40 +57,45 @@ export default function ArchivedTasksPage() {
       setTasks((cur) => cur.filter((t) => t.id !== deleting.id));
       setDeleting(null);
       bump("tasks");
-      push("Task dihapus permanen.");
-    } catch (err) { push(friendlyError(err, "Gagal menghapus task."), "error"); }
+      push("Task permanently deleted.");
+    } catch (err) { push(friendlyError(err, "Failed to delete task."), "error"); }
   }
 
   return (
     <PageContainer className="max-w-3xl">
-      <PageHeader title="Archived Tasks" subtitle="Task yang diarsipkan tidak muncul di daftar harian." />
+      <PageHeader title="Archived Tasks" subtitle="Archived tasks don&apos;t appear in your daily list." />
+      
       <div className="space-y-3">
-        {status === "loading" ? (<><Skeleton className="h-20 rounded-[20px]" /><Skeleton className="h-20 rounded-[20px]" /></>)
-        : status === "failure" ? (
-          <EmptyState icon={Archive} title="Gagal memuat arsip" description={error}
-            action={<button type="button" onClick={load} className="btn-primary btn-sm">Coba lagi</button>} />
+        {status === "loading" ? (
+          <><Skeleton className="h-24 rounded-[var(--radius-card)]" /><Skeleton className="h-24 rounded-[var(--radius-card)]" /></>
+        ) : status === "failure" ? (
+          <EmptyState icon={Archive} title="Failed to load archive" description={error}
+            action={<button type="button" onClick={load} className="btn-primary btn-sm">Try again</button>} />
         ) : tasks.length === 0 ? (
-          <EmptyState icon={Archive} title="Arsip kosong" description="Task yang kamu arsipkan akan muncul di sini." />
+          <EmptyState icon={Archive} title="Archive is empty" description="Tasks you archive will appear here." />
         ) : tasks.map((task) => (
-          <div key={task.id} className="card flex items-center gap-3 p-4">
+          <div key={task.id} className="card flex items-center gap-4 p-4">
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[15px] font-bold text-reset-dark">{task.title}</p>
-              <p className="mt-0.5 text-[13px] text-reset-muted">
-                Diarsipkan {task.archivedOn ? shortDate(task.archivedOn) : ""}
+              <p className="truncate body-md font-semibold text-reset-dark">{task.title}</p>
+              <p className="mt-0.5 body-sm text-reset-muted">
+                Archived {task.archivedOn ? shortDate(task.archivedOn) : "Unknown date"}
               </p>
             </div>
-            <button type="button" disabled={restoring.has(task.id)} onClick={() => handleRestore(task)} className="btn-outline btn-sm">
-              {restoring.has(task.id) ? "Memulihkan..." : "Pulihkan"}
+            <button type="button" disabled={restoring.has(task.id)} onClick={() => handleRestore(task)} className="btn-outline btn-sm flex items-center gap-1.5">
+              <RotateCcw size={16} />
+              {restoring.has(task.id) ? "Restoring..." : "Restore"}
             </button>
-            <button type="button" onClick={() => setDeleting(task)} className="btn-sm rounded-xl px-3 py-2 text-[13.5px] font-semibold text-reset-danger hover:bg-[#FFF0EF]">
-              Hapus
+            <button type="button" onClick={() => setDeleting(task)} className="btn-danger btn-sm flex items-center gap-1.5">
+              <Trash2 size={16} />
+              Delete
             </button>
           </div>
         ))}
       </div>
-      <ConfirmDialog open={!!deleting} onClose={() => setDeleting(null)} title="Hapus permanen?"
-        message={`"${deleting?.title}" akan dihapus permanen beserta riwayat checklist-nya.`}
-        confirmLabel="Hapus permanen" onConfirm={handleDelete} />
+
+      <ConfirmDialog open={!!deleting} onClose={() => setDeleting(null)} title="Delete Permanently?"
+        message={`"${deleting?.title}" will be permanently deleted along with its checklist history.`}
+        confirmLabel="Delete Permanently" onConfirm={handleDelete} />
     </PageContainer>
   );
 }

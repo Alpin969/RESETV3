@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { localToday } from "@/lib/utils/date";
+import { createTask as apiCreate, fetchActiveTasks } from "@/features/tasks/tasks-api";
 import {
-  archiveTask as apiArchive, completeTask as apiComplete, createTask as apiCreate,
-  deleteTask as apiDelete, fetchActiveTasks, fetchChecklists,
+  archiveTask as apiArchive, completeTask as apiComplete,
+  deleteTask as apiDelete, fetchChecklists,
   fetchStreakStats, restoreTask as apiRestore, uncompleteTask as apiUncomplete,
   updateTask as apiUpdate,
 } from "@/features/tasks/tasks-mutations";
@@ -33,9 +34,15 @@ export function useTodayTasks() {
         fetchChecklists({ from: day, to: day }),
         fetchStreakStats().catch(() => ({ currentStreak: 0, longestStreak: 0, totalSuccessDays: 0, lastSuccessDate: null })),
       ]);
-      const completed = new Set(checks.filter((c) => c.isCompleted).map((c) => c.taskId));
+      const completedMap = new Map(
+        checks.filter((c) => c.isCompleted).map((c) => [c.taskId, c.completedAt || null])
+      );
       const start = (t) => new Date(t.startsOn.getFullYear(), t.startsOn.getMonth(), t.startsOn.getDate());
-      setTasks(active.filter((t) => day >= start(t)).map((t) => ({ task: t, isCompleted: completed.has(t.id) })));
+      setTasks(active.filter((t) => day >= start(t)).map((t) => ({
+        task: t,
+        isCompleted: completedMap.has(t.id),
+        completedAt: completedMap.get(t.id) || null,
+      })));
       setStreak(stats);
       setError(null);
       setStatus("ready");
@@ -67,7 +74,11 @@ export function useTodayTasks() {
     if (busyIds.has(id)) return;
     const target = !item.isCompleted;
     const previous = tasks;
-    setTasks((cur) => cur.map((t) => (t.task.id === id ? { ...t, isCompleted: target } : t)));
+    setTasks((cur) => cur.map((t) => (
+      t.task.id === id
+        ? { ...t, isCompleted: target, completedAt: target ? new Date() : null }
+        : t
+    )));
     setBusyIds((cur) => new Set(cur).add(id));
     try {
       if (target) await apiComplete({ taskId: id, date: today });
@@ -80,8 +91,7 @@ export function useTodayTasks() {
     } finally {
       setBusyIds((cur) => { const next = new Set(cur); next.delete(id); return next; });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [busyIds, tasks, today]);
+  }, [busyIds, tasks, today, bump]);
 
   const addTask = useCallback(async ({ title, notes }) => {
     setSaving(true);
@@ -91,8 +101,7 @@ export function useTodayTasks() {
       fetchStreakStats().then(setStreak).catch(() => {});
       bump("tasks");
     } finally { setSaving(false); }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tasks.length, today]);
+  }, [tasks.length, today, bump]);
 
   const editTask = useCallback(async ({ id, title, notes }) => {
     setSaving(true);
@@ -101,7 +110,7 @@ export function useTodayTasks() {
       setTasks((cur) => cur.map((t) => (t.task.id === id ? { task: updated, isCompleted: t.isCompleted } : t)));
       bump("tasks");
     } finally { setSaving(false); }
-  }, []);
+  }, [bump]);
 
   const archive = useCallback(async (id) => {
     setBusyIds((cur) => new Set(cur).add(id));
@@ -113,8 +122,7 @@ export function useTodayTasks() {
     } finally {
       setBusyIds((cur) => { const next = new Set(cur); next.delete(id); return next; });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [today]);
+  }, [today, bump]);
 
   const remove = useCallback(async (id) => {
     setBusyIds((cur) => new Set(cur).add(id));
@@ -125,13 +133,13 @@ export function useTodayTasks() {
     } finally {
       setBusyIds((cur) => { const next = new Set(cur); next.delete(id); return next; });
     }
-  }, []);
+  }, [bump]);
 
   const restore = useCallback(async (id) => {
     await apiRestore({ id });
     bump("tasks");
     load();
-  }, [load]);
+  }, [load, bump]);
 
   const completedCount = tasks.filter((t) => t.isCompleted).length;
   return {

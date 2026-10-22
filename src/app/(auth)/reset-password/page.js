@@ -1,7 +1,7 @@
 import ResetPasswordForm from "@/features/auth/reset-password-form";
 
 export const metadata = {
-  title: "Password Baru",
+  title: "New Password",
 };
 
 export default function ResetPasswordPage() {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Modal from "@/components/ui/modal";
 import { formatDateParam, parseDateParam } from "@/lib/utils/date";
 
@@ -8,24 +8,12 @@ function pad(n) { return String(n).padStart(2, "0"); }
 
 export default function SleepFormModal({ open, onClose, title, submitLabel, initial, saving, onSubmit }) {
   const todayStr = formatDateParam(new Date());
-  const [date, setDate] = useState(todayStr);
-  const [bed, setBed] = useState("22:00");
-  const [wake, setWake] = useState("06:00");
-  const [quality, setQuality] = useState(null);
-  const [notes, setNotes] = useState("");
+  const [date, setDate] = useState(initial?.sleepDate ? formatDateParam(initial.sleepDate) : todayStr);
+  const [bed, setBed] = useState(initial ? `${pad(initial.bedTime.getHours())}:${pad(initial.bedTime.getMinutes())}` : "22:00");
+  const [wake, setWake] = useState(initial ? `${pad(initial.wakeTime.getHours())}:${pad(initial.wakeTime.getMinutes())}` : "06:00");
+  const [quality, setQuality] = useState(initial?.quality || null);
+  const [notes, setNotes] = useState(initial?.notes || "");
   const [error, setError] = useState(null);
-
-  useEffect(() => {
-    if (open) {
-      setDate(initial?.sleepDate ? formatDateParam(initial.sleepDate) : formatDateParam(new Date()));
-      setBed(initial ? `${pad(initial.bedTime.getHours())}:${pad(initial.bedTime.getMinutes())}` : "22:00");
-      setWake(initial ? `${pad(initial.wakeTime.getHours())}:${pad(initial.wakeTime.getMinutes())}` : "06:00");
-      setQuality(initial?.quality || null);
-      setNotes(initial?.notes || "");
-      setError(null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -67,7 +55,7 @@ export default function SleepFormModal({ open, onClose, title, submitLabel, init
               <button key={q} type="button" onClick={() => setQuality(quality === q ? null : q)}
                 aria-label={`Kualitas ${q}`}
                 className={`flex h-10 w-10 items-center justify-center rounded-full border text-[16px] transition ${quality >= q ? "" : "border-reset-border text-reset-muted"}`}
-                style={quality >= q ? { borderColor: "#23845B", background: "#E3F1E9" } : undefined}>
+                style={quality >= q ? { borderColor: "#2F8A60", background: "#E3F1E9" } : undefined}>
                 ★
               </button>
             ))}

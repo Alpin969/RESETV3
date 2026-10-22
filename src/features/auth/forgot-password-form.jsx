@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Mail } from "lucide-react";
 import AuthShell from "./auth-shell";
 import AuthMessage from "./auth-message";
 import AuthSubmitButton from "./auth-submit-button";
+import { AuthInput } from "./auth-fields";
 import { createClient } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/utils/errors";
 import { validateEmail } from "@/lib/utils/validators";
@@ -45,25 +47,30 @@ export default function ForgotPasswordForm() {
   if (sent) {
     return (
       <AuthShell
-        title="Periksa emailmu"
-        subtitle="Link reset password sudah dikirim jika email tersebut terdaftar."
-        backHref="/login"
+        title="Check your inbox"
+        subtitle="We've sent a password reset link if that email is registered."
+        panelVariant="forgot"
+        footer={
+          <Link href="/login" className="font-bold text-reset-primary hover:underline">
+            Back to login
+          </Link>
+        }
       >
         <AuthMessage
           type="success"
-          message="Buka email dan klik link reset password. Demi keamanan, link ini hanya dapat digunakan sekali dan memiliki masa berlaku."
+          message="Open the email and tap the reset password link. For security, the link can only be used once and expires."
         />
-        <Link href="/login" className="btn-primary w-full">
-          Kembali ke Login
+        <Link href="/login" className="btn-primary btn-lg w-full">
+          Back to Login
         </Link>
-        <p className="mt-4 text-center text-[12px] leading-5 text-reset-muted">
-          Tidak menerima email? Periksa folder spam atau{" "}
+        <p className="mt-4 text-center text-[12.5px] leading-5 text-reset-muted">
+          Didn&apos;t receive the email? Check your spam folder or{" "}
           <button
             type="button"
             onClick={() => setSent(false)}
             className="font-semibold text-reset-primary hover:underline"
           >
-            coba lagi
+            try again
           </button>
           .
         </p>
@@ -73,43 +80,36 @@ export default function ForgotPasswordForm() {
 
   return (
     <AuthShell
-      title="Reset Password"
-      subtitle="Masukkan email akunmu untuk menerima link reset password."
-      backHref="/login"
+      title="Forgot your password?"
+      subtitle="Enter your email and we'll send you a reset link."
+      panelVariant="forgot"
+      footer={
+        <Link href="/login" className="font-bold text-reset-primary hover:underline">
+          Back to login
+        </Link>
+      }
     >
       <AuthMessage message={error} />
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
-        <div>
-          <label htmlFor="forgot-email" className="field-label">
-            Email
-          </label>
-          <input
-            id="forgot-email"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="nama@email.com"
-            autoComplete="email"
-            inputMode="email"
-            disabled={submitting}
-            className="field"
-          />
-          {fieldError ? (
-            <p className="mt-1.5 text-[12px] text-reset-danger">{fieldError}</p>
-          ) : null}
-        </div>
+        <AuthInput
+          id="forgot-email"
+          label="Email address"
+          type="email"
+          icon={Mail}
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="Email address"
+          autoComplete="email"
+          inputMode="email"
+          disabled={submitting}
+          error={fieldError}
+        />
         <AuthSubmitButton
-          label="Kirim link reset"
-          loadingLabel="Mengirim..."
+          label="Send reset link"
+          loadingLabel="Sending..."
           loading={submitting}
         />
       </form>
-      <p className="mt-4 text-center text-[12px] leading-5 text-reset-muted">
-        Ingat passwordmu?{" "}
-        <Link href="/login" className="font-semibold text-reset-primary">
-          Login
-        </Link>
-      </p>
     </AuthShell>
   );
 }

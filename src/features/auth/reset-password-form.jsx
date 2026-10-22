@@ -5,15 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthShell from "./auth-shell";
 import AuthMessage from "./auth-message";
-import PasswordField from "./password-field";
 import AuthSubmitButton from "./auth-submit-button";
+import { AuthPasswordInput } from "./auth-fields";
 import Spinner from "@/components/ui/spinner";
 import { createClient } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/utils/errors";
-import {
-  validateConfirmPassword,
-  validatePassword,
-} from "@/lib/utils/validators";
+import { validateConfirmPassword, validatePassword } from "@/lib/utils/validators";
 
 export default function ResetPasswordForm() {
   const router = useRouter();
@@ -113,25 +110,37 @@ export default function ResetPasswordForm() {
 
   if (status === "checking") {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-reset-bg">
-        <Spinner size={26} className="text-reset-primary" />
-      </div>
+      <AuthShell
+        title="Securing your account"
+        subtitle="Verifying your password reset link."
+        panelVariant="reset"
+      >
+        <div className="flex flex-col items-center justify-center rounded-[14px] border border-reset-border bg-white px-6 py-8">
+          <Spinner size={28} className="text-reset-primary" />
+          <p className="mt-4 text-[13px] text-reset-muted">Verifying reset link...</p>
+        </div>
+      </AuthShell>
     );
   }
 
   if (status === "invalid") {
     return (
       <AuthShell
-        title="Link tidak valid"
-        subtitle="Link reset password sudah kedaluwarsa atau tidak dapat digunakan."
-        backHref="/login"
+        title="Invalid link"
+        subtitle="This password reset link has expired or can't be used."
+        panelVariant="reset"
+        footer={
+          <Link href="/login" className="font-bold text-reset-primary hover:underline">
+            Back to login
+          </Link>
+        }
       >
-        <AuthMessage message="Minta link baru, lalu buka link tersebut di browser yang sama dengan tempat kamu meminta reset." />
-        <Link href="/forgot-password" className="btn-primary w-full">
-          Minta link baru
+        <AuthMessage message="Request a new link, then open it in the same browser where you requested the reset." />
+        <Link href="/forgot-password" className="btn-primary btn-lg w-full">
+          Request New Link
         </Link>
-        <Link href="/login" className="btn-outline mt-3 w-full">
-          Kembali
+        <Link href="/login" className="btn-outline btn-lg mt-3 w-full">
+          Back to Login
         </Link>
       </AuthShell>
     );
@@ -139,35 +148,40 @@ export default function ResetPasswordForm() {
 
   return (
     <AuthShell
-      title="Password Baru"
-      subtitle="Buat password baru untuk akunmu."
-      backHref="/login"
+      title="Set a new password"
+      subtitle="Create a strong new password for your account."
+      panelVariant="reset"
+      footer={
+        <Link href="/login" className="font-bold text-reset-primary hover:underline">
+          Back to login
+        </Link>
+      }
     >
       <AuthMessage message={message} />
-      <form onSubmit={handleSubmit} noValidate className="space-y-4">
-        <PasswordField
+      <form onSubmit={handleSubmit} noValidate className="space-y-3.5">
+        <AuthPasswordInput
           id="reset-password"
-          label="Password Baru"
+          label="New password"
           value={password}
-          onChange={setPassword}
+          onChange={(event) => setPassword(event.target.value)}
+          autoComplete="new-password"
+          placeholder="New password"
+          disabled={submitting}
           error={errors.password}
-          autoComplete="new-password"
-          placeholder="Minimal 8 karakter"
-          disabled={submitting}
         />
-        <PasswordField
+        <AuthPasswordInput
           id="reset-confirm"
-          label="Konfirmasi Password Baru"
+          label="Confirm new password"
           value={confirmPassword}
-          onChange={setConfirmPassword}
-          error={errors.confirmPassword}
+          onChange={(event) => setConfirmPassword(event.target.value)}
           autoComplete="new-password"
-          placeholder="Ulangi password baru"
+          placeholder="Confirm new password"
           disabled={submitting}
+          error={errors.confirmPassword}
         />
         <AuthSubmitButton
-          label="Simpan password baru"
-          loadingLabel="Menyimpan..."
+          label="Save New Password"
+          loadingLabel="Saving..."
           loading={submitting}
         />
       </form>

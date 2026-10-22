@@ -1,7 +1,7 @@
 import RegisterForm from "@/features/auth/register-form";
 
 export const metadata = {
-  title: "Register",
+  title: "Create Account",
 };
 
 export default function RegisterPage() {

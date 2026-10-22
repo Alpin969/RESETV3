@@ -19,6 +19,7 @@ export function parseChecklist(row, fallbackDate) {
     taskId: row.task_id,
     taskDate: parseDateParam(row.task_date) || fallbackDate,
     isCompleted: row.is_completed ?? true,
+    completedAt: row.completed_at ? new Date(row.completed_at) : null,
   };
 }
 

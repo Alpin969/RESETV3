@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MoonStar } from "lucide-react";
+import { MoonStar, BellPlus, BellOff } from "lucide-react";
 import Modal from "@/components/ui/modal";
 import ToggleSwitch from "@/components/ui/switch";
 import Skeleton from "@/components/ui/skeleton";
 import { fetchNotificationPreferences, saveNotificationPreferences } from "@/features/settings/settings-api";
 import { friendlyError } from "@/lib/utils/errors";
+import { usePushSubscription } from "@/features/settings/use-push-subscription";
 
 const ROWS = [
   { key: "reminderEnabled", title: "Reminder harian", subtitle: "Pengingat tugas dan rutinitas" },
@@ -20,6 +21,8 @@ export default function NotificationCard({ push }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [quietOpen, setQuietOpen] = useState(false);
+
+  const { isSupported, isSubscribed, loading: pushLoading, error: pushError, subscribe, unsubscribe } = usePushSubscription();
 
   useEffect(() => {
     let active = true;
@@ -42,16 +45,69 @@ export default function NotificationCard({ push }) {
     }
   }
 
+  async function handlePushToggle() {
+    if (!isSupported) {
+      push("Push notification tidak didukung di browser ini.", "error");
+      return;
+    }
+    if (isSubscribed) {
+      await unsubscribe();
+      await update({ ...prefs, pushEnabled: false });
+    } else {
+      const result = await subscribe();
+      if (result.ok) {
+        await update({ ...prefs, pushEnabled: true });
+        push("Notifikasi push diaktifkan.", "success");
+      } else {
+        push(result.error || "Gagal mengaktifkan push notification.", "error");
+      }
+    }
+  }
+
   if (loading) return (<div className="card mt-4 p-5"><Skeleton className="h-24 rounded-2xl" /></div>);
 
   return (
     <div className="card mt-4 p-5">
       <h2 className="text-[16px] font-bold text-reset-dark">Notifikasi</h2>
       <p className="mt-1 text-[13px] leading-5 text-reset-muted">
-        Notifikasi push belum dikonfigurasi pada build ini. Preferensi di bawah tersimpan dan akan dipakai saat push diaktifkan.
+        Atur preferensi notifikasi dan aktifkan push untuk menerima pengingat di perangkat Anda.
       </p>
       {prefs ? (
         <div className="mt-3 divide-y divide-reset-border/60">
+          <div className="flex items-center gap-3 py-3 border-b border-reset-border/60">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-reset-primary-light text-reset-primary">
+              {prefs?.pushEnabled ? <BellOff size={18} /> : <BellPlus size={18} />}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[14px] font-bold text-reset-dark">Notifikasi Push</p>
+              <p className="text-[12.5px] text-reset-muted">{prefs?.pushEnabled ? "Notifikasi akan dikirim ke perangkat Anda." : "Aktifkan untuk menerima notifikasi push."}</p>
+            </div>
+            <button
+              type="button"
+              onClick={handlePushToggle}
+              disabled={pushLoading || !isSupported}
+              className={`flex h-9 w-[52px] shrink-0 items-center justify-center rounded-full transition-colors ${
+                prefs?.pushEnabled
+                  ? "bg-reset-primary text-white"
+                  : "bg-[#CFD9D2] text-reset-muted"
+              } ${pushLoading ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+              aria-label={prefs?.pushEnabled ? "Matikan Push" : "Aktifkan Push"}
+            >
+              {pushLoading ? (
+                <span className="animate-spin h-4 w-4 border-2 border-current rounded-full border-t-transparent" />
+              ) : null}
+            </button>
+          </div>
+          {!isSupported && (
+            <div className="py-3 px-4 bg-reset-bg rounded-lg text-[12.5px] text-reset-muted border border-reset-border/40">
+              Browser ini tidak mendukung notifikasi push. Gunakan Chrome atau Edge.
+            </div>
+          )}
+          {pushError && (
+            <div className="py-3 px-4 bg-[#FDECEA] rounded-lg text-[12.5px] text-reset-danger border border-reset-danger/40">
+              {pushError}
+            </div>
+          )}
           {ROWS.map((row) => (
             <div key={row.key} className="flex items-center gap-3 py-3">
               <div className="min-w-0 flex-1">
@@ -88,12 +144,6 @@ export default function NotificationCard({ push }) {
 function QuietHoursModal({ open, onClose, initial, onSave }) {
   const [start, setStart] = useState(initial?.quietHoursStart || "22:00");
   const [end, setEnd] = useState(initial?.quietHoursEnd || "06:00");
-  useEffect(() => {
-    if (open) {
-      setStart(initial?.quietHoursStart || "22:00");
-      setEnd(initial?.quietHoursEnd || "06:00");
-    }
-  }, [open, initial]);
   return (
     <Modal open={open} onClose={onClose} title="Jam tenang" description="Selama jam tenang, pengingat tidak dikirim."
       footer={<div className="flex gap-3">

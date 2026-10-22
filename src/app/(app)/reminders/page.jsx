@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BellRing, Plus } from "lucide-react";
+import { BellRing, Plus, ChevronRight } from "lucide-react";
 import PageContainer from "@/components/ui/page-container";
 import PageHeader from "@/components/ui/page-header";
 import Skeleton from "@/components/ui/skeleton";
@@ -32,26 +32,37 @@ export default function RemindersPage() {
       setFormOpen(false);
       setEditing(null);
       bump("reminders");
-      push(id ? "Reminder diperbarui." : "Reminder dibuat.");
-    } catch (err) { push(friendlyError(err, "Gagal menyimpan reminder."), "error"); }
+      push(id ? "Reminder updated." : "Reminder created.");
+    } catch (err) { push(friendlyError(err, "Failed to save reminder."), "error"); }
     finally { setSaving(false); }
   }
 
   return (
     <PageContainer className="max-w-3xl">
-      <PageHeader title="Reminders" subtitle="Kelola pengingat harianmu."
-        action={<button type="button" onClick={() => setFormOpen(true)} className="btn-primary btn-sm"><Plus size={16} /> Tambah</button>} />
-      <div className="rounded-[14px] border border-[#BFE3D0] bg-[#F0FAF4] px-4 py-3 text-[13px] font-medium leading-5 text-[#1B5C3E]">
-        Notifikasi push belum diaktifkan. Reminder tetap tersimpan dan bisa dikelola di sini.
+      <PageHeader title="Reminders" subtitle="Manage your daily reminders and never miss a habit."
+        action={<button type="button" onClick={() => setFormOpen(true)} className="btn-primary btn-sm"><Plus size={16} /> Add Reminder</button>} />
+      
+      <div className="card mt-4 p-4 bg-reset-primary-light border-reset-primary/30">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-reset-primary/10">
+            <BellRing size={18} className="text-reset-primary" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="body-sm font-semibold text-reset-dark">Push Notifications</p>
+            <p className="body-xs text-reset-primary">Reminders are stored locally. Push notifications coming soon.</p>
+          </div>
+        </div>
       </div>
+
       <div className="mt-4 space-y-3">
-        {data.status === "loading" ? (<><Skeleton className="h-24 rounded-[20px]" /><Skeleton className="h-24 rounded-[20px]" /></>)
-        : data.status === "failure" ? (
-          <EmptyState icon={BellRing} title="Gagal memuat reminder" description={data.error}
-            action={<button type="button" onClick={data.reload} className="btn-primary btn-sm">Coba lagi</button>} />
+        {data.status === "loading" ? (
+          <><Skeleton className="h-28 rounded-[var(--radius-card)]" /><Skeleton className="h-28 rounded-[var(--radius-card)]" /></>
+        ) : data.status === "failure" ? (
+          <EmptyState icon={BellRing} title="Failed to load reminders" description={data.error}
+            action={<button type="button" onClick={data.reload} className="btn-primary btn-sm">Try again</button>} />
         ) : data.reminders.length === 0 ? (
-          <EmptyState icon={BellRing} title="Belum ada reminder" description="Buat pengingat pertamamu agar rutinitas tidak terlewat."
-            action={<button type="button" onClick={() => setFormOpen(true)} className="btn-primary btn-sm">Buat reminder</button>} />
+          <EmptyState icon={BellRing} title="No reminders yet" description="Create your first reminder to stay on track."
+            action={<button type="button" onClick={() => setFormOpen(true)} className="btn-primary btn-sm">Create Reminder</button>} />
         ) : data.reminders.map((reminder) => (
           <ReminderTile key={reminder.id} reminder={reminder}
             onToggle={(v) => data.toggle(reminder, v).catch((e) => push(friendlyError(e), "error"))}
@@ -59,14 +70,15 @@ export default function RemindersPage() {
             onDelete={() => setDeleting(reminder)} />
         ))}
       </div>
+
       <ReminderFormModal key={editing?.id || "new"} open={formOpen} onClose={() => { setFormOpen(false); setEditing(null); }}
-        title={editing ? "Ubah reminder" : "Buat reminder"} submitLabel={editing ? "Simpan perubahan" : "Simpan reminder"}
+        title={editing ? "Edit Reminder" : "Create Reminder"} submitLabel={editing ? "Save Changes" : "Save Reminder"}
         initial={editing} saving={saving} onSubmit={(v) => save(v, editing?.id || null)} />
-      <ConfirmDialog open={!!deleting} onClose={() => setDeleting(null)} title="Hapus reminder?"
-        message={`"${deleting?.title}" akan dihapus permanen.`} confirmLabel="Hapus" danger
+      <ConfirmDialog open={!!deleting} onClose={() => setDeleting(null)} title="Delete Reminder?"
+        message={`"${deleting?.title}" will be permanently deleted.`} confirmLabel="Delete" danger
         onConfirm={async () => {
-          try { await data.remove(deleting); setDeleting(null); push("Reminder dihapus."); }
-          catch (err) { push(friendlyError(err, "Gagal menghapus reminder."), "error"); }
+          try { await data.remove(deleting); setDeleting(null); push("Reminder deleted."); }
+          catch (err) { push(friendlyError(err, "Failed to delete reminder."), "error"); }
         }} />
     </PageContainer>
   );

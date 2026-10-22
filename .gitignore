@@ -38,6 +38,12 @@ yarn-error.log*
 .v2ref/
 .v2ref2/
 
+# local audit workspace
+RESETV3-audit/
+
+# lint cache
+.eslintcache
+
 # vercel
 .vercel
 

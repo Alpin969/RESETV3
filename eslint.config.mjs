@@ -10,6 +10,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "RESETV3-audit/**",
+    ".v2ref/**",
   ]),
 ]);
 

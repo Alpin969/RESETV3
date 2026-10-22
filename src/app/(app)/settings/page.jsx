@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Archive, BellRing, ChevronRight, Download, LogOut, Pencil } from "lucide-react";
+import { Archive, BellRing, ChevronRight, Download, LogOut, Pencil, BedDouble, PiggyBank, FileText } from "lucide-react";
 import { useAuth } from "@/features/auth/auth-provider";
 import Avatar from "@/components/ui/avatar";
 import Skeleton from "@/components/ui/skeleton";
@@ -31,8 +31,8 @@ export default function SettingsPage() {
       await uploadAvatar(file);
       await refreshProfile();
       bump("profile");
-      push("Avatar diperbarui.");
-    } catch (err) { push(friendlyError(err, "Gagal mengunggah avatar."), "error"); }
+      push("Avatar updated.");
+    } catch (err) { push(friendlyError(err, "Failed to upload avatar."), "error"); }
   }
 
   async function handleSignOut() {
@@ -40,75 +40,110 @@ export default function SettingsPage() {
     try {
       await signOut();
       router.replace("/login");
-    } catch (err) { push(friendlyError(err, "Gagal logout."), "error"); setSigningOut(false); }
+    } catch (err) { push(friendlyError(err, "Failed to logout."), "error"); setSigningOut(false); }
   }
 
+  const settingsItems = [
+    { icon: Pencil, title: "Username", subtitle: profile?.username || "—", onClick: () => setUsernameOpen(true) },
+    { icon: Pencil, title: "Avatar", subtitle: "Change profile photo", onClick: () => document.getElementById("avatar-input")?.click() },
+    { icon: Pencil, title: "Timezone", subtitle: timezoneLabel(profile?.timezone || "UTC"), onClick: () => setTimezoneOpen(true) },
+    { icon: Archive, title: "Archived Tasks", subtitle: "View and restore tasks", onClick: () => router.push("/archived-tasks") },
+    { icon: BedDouble, title: "Sleep Tracker", subtitle: "Manage sleep logs", onClick: () => router.push("/sleep") },
+    { icon: PiggyBank, title: "Savings Tracker", subtitle: "Manage transactions", onClick: () => router.push("/savings") },
+    { icon: BellRing, title: "Reminders", subtitle: "Manage reminders", onClick: () => router.push("/reminders") },
+    { icon: Download, title: "Export Data", subtitle: "Download JSON or CSV", onClick: () => router.push("/export") },
+    { icon: FileText, title: "Notification Preferences", subtitle: "Manage notification settings", onClick: () => router.push("/settings#notifications") },
+  ];
+
   return (
-    <div className="mx-auto w-full max-w-3xl px-5 pb-28 pt-5 tablet:px-7 tablet:pt-7 desktop:pb-10">
-      <h1 className="page-title">Settings</h1>
-      <p className="muted mt-1 text-[14px]">Kelola profil dan preferensimu.</p>
-      <div className="card mt-5 flex items-center gap-4 p-5">
-        <Avatar username={profile?.username} avatarUrl={profile?.avatar_url} size={60} />
-        <div className="min-w-0 flex-1">
-          {profileLoading ? (<><Skeleton className="h-5 w-32 rounded-lg" /><Skeleton className="mt-2 h-4 w-48 rounded-lg" /></>)
-          : (<>
-            <p className="truncate text-[18px] font-bold text-reset-dark">{profile?.username || user?.email?.split("@")[0] || "Pengguna"}</p>
-            <p className="mt-0.5 truncate text-[13.5px] text-reset-muted">{user?.email || ""}</p>
-            <p className="mt-0.5 text-[12.5px] text-reset-muted">Zona waktu: {timezoneLabel(profile?.timezone || "UTC")}</p>
-          </>)}
+    <div className="container-main py-6 desktop:py-8">
+      <div className="mb-6">
+        <h1 className="page-title">Settings</h1>
+        <p className="mt-1 body-md text-reset-muted">Manage your profile and preferences.</p>
+      </div>
+
+      <div className="card p-5 mb-6">
+        <div className="flex items-center gap-4">
+          <Avatar username={profile?.username} avatarUrl={profile?.avatar_url} size={64} />
+          <div className="min-w-0 flex-1">
+            {profileLoading ? (
+              <>
+                <Skeleton className="h-6 w-40 rounded-lg" />
+                <Skeleton className="mt-2 h-4 w-48 rounded-lg" />
+              </>
+            ) : (
+              <>
+                <p className="truncate heading-3">{profile?.username || user?.email?.split("@")[0] || "User"}</p>
+                <p className="mt-0.5 truncate body-sm text-reset-muted">{user?.email || ""}</p>
+                <p className="mt-1 body-xs text-reset-muted">Timezone: {timezoneLabel(profile?.timezone || "UTC")}</p>
+              </>
+            )}
+          </div>
         </div>
       </div>
-      <div className="card mt-4 divide-y divide-reset-border/70 p-2">
-        <Tile icon={Pencil} title="Ubah username" subtitle={profile?.username || "-"} onClick={() => setUsernameOpen(true)} />
-        <Tile icon={Pencil} title="Upload avatar" subtitle="Ganti foto profil" onClick={() => document.getElementById("avatar-input")?.click()} />
-        <Tile icon={Pencil} title="Zona waktu" subtitle={timezoneLabel(profile?.timezone || "UTC")} onClick={() => setTimezoneOpen(true)} />
-        <Tile icon={Archive} title="Archived tasks" subtitle="Lihat dan pulihkan task" onClick={() => router.push("/archived-tasks")} />
-        <Tile icon={BellRing} title="Reminders" subtitle="Kelola pengingat" onClick={() => router.push("/reminders")} />
-        <Tile icon={Download} title="Export data" subtitle="Unduh JSON atau CSV" onClick={() => router.push("/export")} />
+
+      <div className="card divide-y divide-reset-border/50 mb-6">
+        {settingsItems.map((item, index) => (
+          <button
+            key={item.title}
+            type="button"
+            onClick={item.onClick}
+            className="flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-reset-bg first:rounded-t-[var(--radius-card)] last:rounded-b-[var(--radius-card)]"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-reset-primary-light text-reset-primary">
+              <item.icon size={20} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate body-md font-semibold text-reset-dark">{item.title}</p>
+              <p className="truncate body-sm text-reset-muted">{item.subtitle}</p>
+            </div>
+            <ChevronRight size={18} className="shrink-0 text-reset-muted" />
+          </button>
+        ))}
       </div>
+
       <NotificationCard push={push} />
+
       <div className="card mt-4 p-5">
-        <h2 className="text-[16px] font-bold text-reset-dark">Install RESET</h2>
-        <p className="mt-1 text-[13.5px] leading-5 text-reset-muted">{pwa.subtitle}</p>
-        <button type="button" onClick={pwa.install} disabled={pwa.working || pwa.installed} className="btn-primary mt-3 w-full tablet:w-auto tablet:px-8">
-          {pwa.working ? "Memproses..." : pwa.installed ? "Sudah terpasang" : "Install RESET"}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-reset-primary-light text-reset-primary">
+            <FileText size={20} />
+          </div>
+          <div className="flex-1">
+            <h2 className="heading-3" style={{ color: '#2f8a60', fontSize: '14px', fontWeight: 700 }}>{'Install RESET'}</h2>
+            <p className="body-sm text-reset-muted">{pwa.subtitle}</p>
+          </div>
+        </div>
+        <button type="button" onClick={pwa.install} disabled={pwa.working || pwa.installed} className="btn-primary w-full desktop:w-auto desktop:px-6 min-h-[44px] rounded-[12px]">
+          {pwa.working ? "Processing..." : pwa.installed ? "Already Installed" : "Install RESET"}
         </button>
       </div>
-      <button type="button" onClick={handleSignOut} disabled={signingOut} className="btn-outline mt-4 w-full !border-[#F0C9C6] !text-reset-danger hover:!bg-[#FFF6F5]">
-        <LogOut size={17} /> {signingOut ? "Keluar..." : "Logout"}
+
+      <button type="button" onClick={handleSignOut} disabled={signingOut} className="mt-4 w-full flex items-center justify-center gap-[10px] rounded-[12px] px-[20px] py-[12px] min-h-[48px] border border-reset-danger/50 bg-red-50/60 text-reset-danger text-[16px] font-semibold hover:bg-reset-danger/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-reset-danger/30 focus-visible:ring-offset-2 disabled:opacity-50">
+        <LogOut size={20} className="shrink-0" /> <span className="shrink-0">{signingOut ? "Signing out..." : "Logout"}</span>
       </button>
+
       <input id="avatar-input" type="file" accept="image/*" className="hidden"
         onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; handleAvatar(f); }} />
+      
       <UsernameModal open={usernameOpen} onClose={() => setUsernameOpen(false)} initial={profile?.username || ""}
         onSave={async (username) => {
           await updateProfile({ username });
           await refreshProfile();
           bump("profile");
           setUsernameOpen(false);
-          push("Username diperbarui.");
+          push("Username updated.");
         }} />
+      
       <TimezoneModal open={timezoneOpen} onClose={() => setTimezoneOpen(false)} initial={profile?.timezone || "UTC"}
-        onError={(e) => push(friendlyError(e, "Gagal menyimpan zona waktu."), "error")}
+        onError={(e) => push(friendlyError(e, "Failed to save timezone."), "error")}
         onSave={async (timezone) => {
           await updateProfile({ timezone });
           await refreshProfile();
           bump("profile");
           setTimezoneOpen(false);
-          push("Zona waktu diperbarui.");
+          push("Timezone updated.");
         }} />
     </div>
-  );
-}
-
-function Tile({ icon: Icon, title, subtitle, onClick }) {
-  return (
-    <button type="button" onClick={onClick} className="flex w-full items-center gap-3 rounded-2xl px-3 py-3.5 text-left transition hover:bg-reset-bg">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-reset-soft text-reset-primary"><Icon size={18} /></span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-[14.5px] font-bold text-reset-dark">{title}</span>
-        <span className="block truncate text-[13px] text-reset-muted">{subtitle}</span>
-      </span>
-      <ChevronRight size={18} className="shrink-0 text-reset-muted" />
-    </button>
   );
 }

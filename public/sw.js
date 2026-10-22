@@ -1,4 +1,4 @@
-const CACHE_NAME = "reset-static-v1";
+const CACHE_NAME = "reset-static-v2";
 const OFFLINE_URL = "/offline";
 const PRECACHE_URLS = [
   OFFLINE_URL,
@@ -37,6 +37,65 @@ self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") {
     self.skipWaiting();
   }
+});
+
+self.addEventListener("push", (event) => {
+  const options = {
+    body: "Anda memiliki pengingat baru dari RESET.",
+    icon: "/icons/icon-192.png",
+    badge: "/icons/icon-192.png",
+    vibrate: [200, 100, 200],
+    tag: "reset-reminder",
+    renotify: true,
+    requireInteraction: false,
+    actions: [
+      { action: "open", title: "Buka RESET" },
+      { action: "close", title: "Tutup" },
+    ],
+    data: {
+      url: "/",
+    },
+  };
+
+  if (event.data) {
+    try {
+      const payload = event.data.json();
+      options.body = payload.body || options.body;
+      options.title = payload.title || "RESET - Pengingat";
+      options.data.url = payload.url || "/";
+      if (payload.icon) options.icon = payload.icon;
+      if (payload.tag) options.tag = payload.tag;
+    } catch (e) {
+      options.title = "RESET - Pengingat";
+    }
+  } else {
+    options.title = "RESET - Pengingat";
+  }
+
+  event.waitUntil(self.registration.showNotification(options.title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  if (event.action === "close") {
+    return;
+  }
+
+  const url = event.notification.data?.url || "/";
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if (client.url.includes(new URL(url).origin) && "focus" in client) {
+          return client.focus();
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(url);
+      }
+    })
+  );
 });
 
 async function cacheFirst(request) {

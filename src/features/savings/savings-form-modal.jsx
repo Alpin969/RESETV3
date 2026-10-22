@@ -1,27 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Modal from "@/components/ui/modal";
 import { formatDateParam, parseDateParam } from "@/lib/utils/date";
 import { parseAmountInput } from "@/lib/utils/currency";
 
 export default function SavingsFormModal({ open, onClose, title, submitLabel, initial, saving, onSubmit }) {
-  const [kind, setKind] = useState("deposit");
-  const [amount, setAmount] = useState("");
-  const [date, setDate] = useState(formatDateParam(new Date()));
-  const [note, setNote] = useState("");
+  const [kind, setKind] = useState(initial?.kind || "deposit");
+  const [amount, setAmount] = useState(initial ? String(initial.amount) : "");
+  const [date, setDate] = useState(initial?.occurredOn ? formatDateParam(initial.occurredOn) : formatDateParam(new Date()));
+  const [note, setNote] = useState(initial?.note || "");
   const [error, setError] = useState(null);
-
-  useEffect(() => {
-    if (open) {
-      setKind(initial?.kind || "deposit");
-      setAmount(initial ? String(initial.amount) : "");
-      setDate(initial?.occurredOn ? formatDateParam(initial.occurredOn) : formatDateParam(new Date()));
-      setNote(initial?.note || "");
-      setError(null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
 
   async function handleSubmit(e) {
     e.preventDefault();

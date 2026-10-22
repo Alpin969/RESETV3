@@ -1,26 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Modal from "@/components/ui/modal";
 import { WEEKDAY_OPTIONS } from "@/lib/utils/format";
 
 export default function ReminderFormModal({ open, onClose, title, submitLabel, initial, saving, onSubmit }) {
-  const [name, setName] = useState("");
-  const [body, setBody] = useState("");
-  const [time, setTime] = useState("07:00");
-  const [days, setDays] = useState(() => new Set([1, 2, 3, 4, 5, 6, 7]));
+  const [name, setName] = useState(initial?.title || "");
+  const [body, setBody] = useState(initial?.body || "");
+  const [time, setTime] = useState(initial?.time || "07:00");
+  const [days, setDays] = useState(() => new Set(initial?.daysOfWeek || [1, 2, 3, 4, 5, 6, 7]));
   const [error, setError] = useState(null);
-
-  useEffect(() => {
-    if (open) {
-      setName(initial?.title || "");
-      setBody(initial?.body || "");
-      setTime(initial?.time || "07:00");
-      setDays(new Set(initial?.daysOfWeek || [1, 2, 3, 4, 5, 6, 7]));
-      setError(null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
 
   function toggleDay(day) {
     setDays((cur) => {
