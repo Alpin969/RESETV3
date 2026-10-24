@@ -1,8 +1,9 @@
 import { formatDateParam, localToday } from "@/lib/utils/date";
-import { createTask, fetchActiveTasks, fetchArchivedTasks, parseChecklist, parseStreak, parseTask, TASK_COLUMNS } from "./tasks-api";
+import { createTask, fetchActiveTasks, fetchArchivedTasks, parseChecklist, parseTask, TASK_COLUMNS } from "./tasks-api";
 import { createClient } from "@/lib/supabase/client";
 
 export { createTask, fetchActiveTasks, fetchArchivedTasks };
+export { fetchStreakStats } from "@/features/stats/streak";
 
 export async function updateTask({ id, title, notes }) {
   const supabase = createClient();
@@ -59,14 +60,6 @@ export async function uncompleteTask({ taskId, date }) {
   const { error } = await supabase.from("daily_task_checklists").delete()
     .eq("task_id", taskId).eq("task_date", formatDateParam(date));
   if (error) throw error;
-}
-
-export async function fetchStreakStats() {
-  const supabase = createClient();
-  const { data, error } = await supabase.rpc("get_streak_stats");
-  if (error) throw error;
-  const rows = Array.isArray(data) ? data : [];
-  return parseStreak(rows[0]);
 }
 
 export function completionRateForMonth({ tasks, completedByDate, month, today }) {

@@ -249,7 +249,7 @@ function StreakCard({ streak, className }) {
         <span className="pb-0.5 text-[11.5px] font-semibold text-[#6f8376]">days</span>
       </div>
       <p className="mt-auto pt-3 text-[10.5px] leading-4 text-reset-muted">
-        {streak > 0 ? "Keep it up! You're doing great!" : "Complete a full day to start your streak."}
+        {streak > 0 ? "Keep it up! You're doing great!" : "Complete at least one task to start your streak."}
       </p>
     </section>
   );

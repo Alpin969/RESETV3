@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { formatDateParam, localToday, parseDateParam } from "@/lib/utils/date";
-import { parseStreak } from "@/features/tasks/tasks-api";
+import { fetchStreakStats } from "@/features/stats/streak";
 
 export function parseDailyProgress(row) {
   return {
@@ -20,9 +20,5 @@ export async function fetchDailyProgress({ from, to }) {
 }
 
 export async function fetchStreak() {
-  const supabase = createClient();
-  const { data, error } = await supabase.rpc("get_streak_stats");
-  if (error) throw error;
-  const rows = Array.isArray(data) ? data : [];
-  return parseStreak(rows[0]);
+  return fetchStreakStats();
 }

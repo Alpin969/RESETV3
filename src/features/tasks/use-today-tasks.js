@@ -10,11 +10,12 @@ import {
   fetchStreakStats, restoreTask as apiRestore, uncompleteTask as apiUncomplete,
   updateTask as apiUpdate,
 } from "@/features/tasks/tasks-mutations";
+import { emptyStreakStats } from "@/features/stats/streak";
 import { useDataRevision } from "@/lib/data-revision";
 
 export function useTodayTasks() {
   const [tasks, setTasks] = useState([]);
-  const [streak, setStreak] = useState({ currentStreak: 0, longestStreak: 0, totalSuccessDays: 0, lastSuccessDate: null });
+  const [streak, setStreak] = useState(emptyStreakStats);
   const [today, setToday] = useState(() => localToday());
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState(null);
@@ -23,16 +24,26 @@ export function useTodayTasks() {
   const { revisions, bump } = useDataRevision();
   const tasksRevision = revisions.tasks;
   const firstLoad = useRef(true);
+  const streakRequest = useRef(0);
+
+  const refreshStreak = useCallback(async () => {
+    const request = ++streakRequest.current;
+    try {
+      const stats = await fetchStreakStats();
+      if (request === streakRequest.current) setStreak(stats);
+    } catch {
+      // Keep the last known streak when the refresh fails.
+    }
+  }, []);
 
   const load = useCallback(async () => {
     const day = localToday();
     setToday(day);
     setStatus((s) => (s === "ready" ? s : "loading"));
     try {
-      const [active, checks, stats] = await Promise.all([
+      const [active, checks] = await Promise.all([
         fetchActiveTasks(),
         fetchChecklists({ from: day, to: day }),
-        fetchStreakStats().catch(() => ({ currentStreak: 0, longestStreak: 0, totalSuccessDays: 0, lastSuccessDate: null })),
       ]);
       const completedMap = new Map(
         checks.filter((c) => c.isCompleted).map((c) => [c.taskId, c.completedAt || null])
@@ -43,7 +54,7 @@ export function useTodayTasks() {
         isCompleted: completedMap.has(t.id),
         completedAt: completedMap.get(t.id) || null,
       })));
-      setStreak(stats);
+      await refreshStreak();
       setError(null);
       setStatus("ready");
     } catch (err) {
@@ -51,7 +62,7 @@ export function useTodayTasks() {
       setStatus((s) => (tasks.length === 0 ? "failure" : s));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [refreshStreak]);
 
   useEffect(() => {
     if (firstLoad.current) { firstLoad.current = false; load(); return; }
@@ -83,7 +94,7 @@ export function useTodayTasks() {
     try {
       if (target) await apiComplete({ taskId: id, date: today });
       else await apiUncomplete({ taskId: id, date: today });
-      fetchStreakStats().then(setStreak).catch(() => {});
+      void refreshStreak();
       bump("tasks");
     } catch (err) {
       setTasks(previous);
@@ -91,17 +102,17 @@ export function useTodayTasks() {
     } finally {
       setBusyIds((cur) => { const next = new Set(cur); next.delete(id); return next; });
     }
-  }, [busyIds, tasks, today, bump]);
+  }, [busyIds, tasks, today, bump, refreshStreak]);
 
   const addTask = useCallback(async ({ title, notes }) => {
     setSaving(true);
     try {
       const created = await apiCreate({ title, notes, startsOn: today, sortOrder: tasks.length });
       setTasks((cur) => [...cur, { task: created, isCompleted: false }]);
-      fetchStreakStats().then(setStreak).catch(() => {});
+      void refreshStreak();
       bump("tasks");
     } finally { setSaving(false); }
-  }, [tasks.length, today, bump]);
+  }, [tasks.length, today, bump, refreshStreak]);
 
   const editTask = useCallback(async ({ id, title, notes }) => {
     setSaving(true);
@@ -117,23 +128,24 @@ export function useTodayTasks() {
     try {
       await apiArchive({ id, archivedOn: today });
       setTasks((cur) => cur.filter((t) => t.task.id !== id));
-      fetchStreakStats().then(setStreak).catch(() => {});
+      void refreshStreak();
       bump("tasks");
     } finally {
       setBusyIds((cur) => { const next = new Set(cur); next.delete(id); return next; });
     }
-  }, [today, bump]);
+  }, [today, bump, refreshStreak]);
 
   const remove = useCallback(async (id) => {
     setBusyIds((cur) => new Set(cur).add(id));
     try {
       await apiDelete({ id });
       setTasks((cur) => cur.filter((t) => t.task.id !== id));
+      void refreshStreak();
       bump("tasks");
     } finally {
       setBusyIds((cur) => { const next = new Set(cur); next.delete(id); return next; });
     }
-  }, [bump]);
+  }, [bump, refreshStreak]);
 
   const restore = useCallback(async (id) => {
     await apiRestore({ id });

@@ -34,9 +34,11 @@ Perintah lain: npm run test (uji logika bisnis), npm run build, npm start.
 
 ## Catatan migrasi
 
-- Streak, completion rate History, dan ringkasan sleep/savings mengikuti V2,
-  termasuk RPC get_streak_stats, get_daily_progress, get_sleep_summary,
-  dan get_savings_summary.
+- Streak dihitung di aplikasi dari RPC get_daily_progress: satu task selesai
+  pada suatu tanggal sudah membuat tanggal itu aktif (tetap memakai toleransi
+  hari yang sama/kemarin). Completion rate History dan ringkasan sleep/savings
+  mengikuti V2, termasuk RPC get_daily_progress, get_sleep_summary, dan
+  get_savings_summary.
 - Weekday reminder memakai 1 = Senin ... 7 = Minggu seperti V2.
 - Export JSON memakai struktur V2 (app RESET V2, version 2) agar kompatibel;
   nama file CSV memakai awalan reset-v2-.

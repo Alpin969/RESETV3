@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { fetchDailyProgress, fetchStreak } from "@/features/stats/stats-api";
+import { emptyStreakStats } from "@/features/stats/streak";
 import { fetchSleepSummary } from "@/features/sleep/sleep-api";
 import { fetchSavingsSummary } from "@/features/savings/savings-api";
 import { addDays, localToday } from "@/lib/utils/date";
@@ -10,7 +11,7 @@ import { useDataRevision } from "@/lib/data-revision";
 export function useProgressData() {
   const [today] = useState(() => localToday());
   const [monthly, setMonthly] = useState([]);
-  const [streak, setStreak] = useState({ currentStreak: 0, longestStreak: 0, totalSuccessDays: 0, lastSuccessDate: null });
+  const [streak, setStreak] = useState(emptyStreakStats);
   const [sleep, setSleep] = useState({ averageMinutes: 0, bestMinutes: 0, worstMinutes: 0, logCount: 0 });
   const [savings, setSavings] = useState({ totalDeposits: 0, totalWithdrawals: 0, balance: 0, transactionCount: 0 });
   const [status, setStatus] = useState("loading");

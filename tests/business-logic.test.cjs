@@ -84,4 +84,123 @@ function resolveSleepCrossesMidnight(bedHour, wakeHour) {
 assertEqual(resolveSleepCrossesMidnight(22, 6), "previous-day", "sleep crosses midnight");
 assertEqual(resolveSleepCrossesMidnight(6, 7), "same-day", "sleep same day");
 
+// Streak parity with V3 rule: one completed task makes the day count.
+function localDay(year, month, day) {
+  return new Date(year, month - 1, day);
+}
+
+function localDayKey(value) {
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+}
+
+function progressRow(day, completedCount, totalTasks) {
+  return { day, completedCount, totalTasks };
+}
+
+function computeStreakStats(progress, today) {
+  const byDate = new Map();
+  for (const row of progress) {
+    const day = localDay(row.day.getFullYear(), row.day.getMonth() + 1, row.day.getDate());
+    const key = localDayKey(day);
+    const existing = byDate.get(key);
+    if (existing) {
+      existing.completedCount = Math.max(existing.completedCount, row.completedCount);
+      existing.totalTasks = Math.max(existing.totalTasks, row.totalTasks);
+    } else {
+      byDate.set(key, { day, completedCount: row.completedCount, totalTasks: row.totalTasks });
+    }
+  }
+
+  const days = [...byDate.values()].sort((a, b) => a.day - b.day);
+  const distance = (from, to) => Math.round((to.getTime() - from.getTime()) / 86400000);
+  let run = 0;
+  let lastRun = 0;
+  let longestStreak = 0;
+  let totalSuccessDays = 0;
+  let lastSuccessDate = null;
+  let previous = null;
+
+  for (const row of days) {
+    if (row.totalTasks > 0 && row.completedCount > 0) {
+      totalSuccessDays += 1;
+      lastSuccessDate = row.day;
+      run = previous && distance(previous, row.day) === 1 ? run + 1 : 1;
+      lastRun = run;
+      longestStreak = Math.max(longestStreak, run);
+    } else {
+      run = 0;
+    }
+    previous = row.day;
+  }
+
+  const fromToday = lastSuccessDate ? distance(lastSuccessDate, today) : null;
+  const currentStreak = fromToday !== null && fromToday >= 0 && fromToday <= 1 ? lastRun : 0;
+  return { currentStreak, longestStreak, totalSuccessDays, lastSuccessDate };
+}
+
+const streakDay1 = localDay(2026, 10, 1);
+const streakDay2 = localDay(2026, 10, 2);
+const streakDay3 = localDay(2026, 10, 3);
+
+let streak = computeStreakStats([progressRow(streakDay1, 0, 5)], streakDay1);
+assertEqual(streak.currentStreak, 0, "streak: 0/5 is not counted");
+assertEqual(streak.totalSuccessDays, 0, "streak: 0/5 success days");
+
+for (const completed of [1, 3, 5]) {
+  streak = computeStreakStats([progressRow(streakDay1, completed, 5)], streakDay1);
+  assertEqual(streak.currentStreak, 1, `streak: ${completed}/5 counts as one day`);
+  assertEqual(streak.totalSuccessDays, 1, `streak: ${completed}/5 success days`);
+}
+
+streak = computeStreakStats([
+  progressRow(streakDay1, 1, 5),
+  progressRow(streakDay1, 4, 5),
+], streakDay1);
+assertEqual(streak.currentStreak, 1, "streak: same date only counts once");
+assertEqual(streak.totalSuccessDays, 1, "streak: same date success days once");
+
+streak = computeStreakStats([progressRow(streakDay1, 0, 5)], streakDay1);
+assertEqual(streak.currentStreak, 0, "streak: unchecking the only task resets the day");
+
+streak = computeStreakStats([
+  progressRow(streakDay1, 1, 5),
+  progressRow(streakDay2, 2, 5),
+  progressRow(streakDay3, 5, 5),
+], streakDay3);
+assertEqual(streak.currentStreak, 3, "streak: consecutive active days add up");
+assertEqual(streak.longestStreak, 3, "streak: longest consecutive days");
+assertEqual(streak.totalSuccessDays, 3, "streak: total active days");
+
+streak = computeStreakStats([
+  progressRow(streakDay1, 1, 5),
+  progressRow(streakDay2, 1, 5),
+  progressRow(streakDay3, 0, 5),
+], streakDay3);
+assertEqual(streak.currentStreak, 2, "streak: yesterday tolerance still applies");
+assertEqual(streak.totalSuccessDays, 2, "streak: tolerance keeps success days");
+
+streak = computeStreakStats([
+  progressRow(streakDay1, 1, 5),
+  progressRow(streakDay2, 0, 5),
+  progressRow(streakDay3, 0, 5),
+], streakDay3);
+assertEqual(streak.currentStreak, 0, "streak: two missed days break the streak");
+assertEqual(streak.longestStreak, 1, "streak: longest preserved after break");
+
+streak = computeStreakStats([
+  progressRow(streakDay1, 1, 5),
+  progressRow(streakDay2, 0, 5),
+  progressRow(streakDay3, 1, 5),
+], streakDay3);
+assertEqual(streak.currentStreak, 1, "streak: a gap starts a new run");
+assertEqual(streak.totalSuccessDays, 2, "streak: history counts all active days");
+
+streak = computeStreakStats([
+  progressRow(streakDay1, 1, 5),
+  progressRow(streakDay2, 5, 5),
+  progressRow(streakDay3, 3, 5),
+], streakDay3);
+assertEqual(streak.currentStreak, 3, "streak: history/progress share one rule");
+assertEqual(streak.lastSuccessDate && localDayKey(streak.lastSuccessDate), localDayKey(streakDay3), "streak: last success date");
+
 if (!process.exitCode) console.log("All business-logic tests passed.");

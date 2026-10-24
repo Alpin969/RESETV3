@@ -23,16 +23,6 @@ export function parseChecklist(row, fallbackDate) {
   };
 }
 
-export function parseStreak(row) {
-  if (!row) return { currentStreak: 0, longestStreak: 0, totalSuccessDays: 0, lastSuccessDate: null };
-  return {
-    currentStreak: Number(row.current_streak) || 0,
-    longestStreak: Number(row.longest_streak) || 0,
-    totalSuccessDays: Number(row.total_success_days) || 0,
-    lastSuccessDate: parseDateParam(row.last_success_date),
-  };
-}
-
 async function requireUserId(supabase) {
   const { data } = await supabase.auth.getUser();
   if (!data?.user) throw new Error("Sesi login tidak ditemukan. Silakan login ulang.");
