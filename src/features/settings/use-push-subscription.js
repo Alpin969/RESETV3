@@ -1,9 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 const VAPID_PUBLIC_KEY =
   process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
+
+function subscribeToPushSupport() {
+  return () => {};
+}
+
+function getPushSupportSnapshot() {
+  return typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window;
+}
+
+function getPushSupportServerSnapshot() {
+  return false;
+}
 
 function urlBase64ToUint8Array(base64String) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -26,18 +38,15 @@ function checkRateLimit(key) {
 }
 
 export function usePushSubscription() {
-  const [isSupported, setIsSupported] = useState(false);
+  const isSupported = useSyncExternalStore(
+    subscribeToPushSupport,
+    getPushSupportSnapshot,
+    getPushSupportServerSnapshot
+  );
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const subscribingRef = useRef(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    setIsSupported(
-      "serviceWorker" in navigator && "PushManager" in window
-    );
-  }, []);
 
   const subscribe = useCallback(async () => {
     if (!isSupported || !VAPID_PUBLIC_KEY) {
@@ -140,7 +149,7 @@ export function usePushSubscription() {
       subscribingRef.current = false;
       setLoading(false);
     }
-  }, [isSupported, VAPID_PUBLIC_KEY]);
+  }, [isSupported]);
 
   const unsubscribe = useCallback(async () => {
     if (!isSupported) return { ok: false };
